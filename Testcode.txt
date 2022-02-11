@@ -1,0 +1,59 @@
+# Using this file to log test inputs since the text refreshes when the page re-renders
+
+---Integer assignment---
+int a = 59
+int b = 40
+int c = a + b
+System.out.print(c)
+
+---Expression assignment to variable---
+int num = 0
+num = num + 3
+System.out.print(num)
+
+
+---If-else statement---
+int num = 3
+if (num > 3) {
+    System.out.print("less")
+}
+else {
+    System.out.print("more")
+}
+
+---If-else-if-else statement---
+int num = 3
+if (num > 3) {
+    System.out.print("less")
+}
+else if (num > 2) {
+    System.out.print(num)
+}
+else {
+    System.out.print("more")
+}
+
+---For loop with if statements---
+int num = 5
+for (int i = 0; i < num; i++) {
+if (i > 2) {
+System.out.print(+2)
+}
+if (i < 2) {
+System.out.print(-2)
+}
+}
+
+---For loop with if-else---
+int num = 10 + 3
+for (int i = 0; i < 10; i++) {
+if (i < 5) { 
+System.out.print(i)
+}
+else {
+System.out.print(100)
+}
+}
+System.out.print(i + num)
+System.out.print(num)
+
