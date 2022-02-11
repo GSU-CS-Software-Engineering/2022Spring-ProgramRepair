@@ -1,5 +1,7 @@
 # Program Repair Tool
 
+Names of new team members: Charles Garman
+
 Welcome to our Program Repair Tool!
 
 This tool has been entirely designed based on the specifications and needs of our client at Georgia Southern University.
