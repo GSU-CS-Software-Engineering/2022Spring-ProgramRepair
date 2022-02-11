@@ -1,6 +1,6 @@
 # Program Repair Tool
 
-Names of new team members: Charles Garman
+Names of new team members: Charles Garman, Nailah Jones
 
 Welcome to our Program Repair Tool!
 
