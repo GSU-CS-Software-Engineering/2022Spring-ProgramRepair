@@ -1,5 +1,5 @@
 <!--
-This is the templete for the home component.
+This is the template for the home component.
 In it is a div with the home-container styling class, and in that div is a header that says "Home".
 The tag <problems/> tells Vue to insert the component named "problems" in this location
 -->
@@ -31,6 +31,9 @@ export default {
 <!--
 This is the component's style.
 In it is the CSS the component will use, which in this case is just the class called home-container, which has some specific settings associated with it.
+I believe they may be missing a "." in front of home-container.
+It seems that what they have now is trying to change the settings of an HTML element titled home-container, and there isn't one as far as I can tell.
+A "." in front of it would specify to CSS that this is a class, which seems to be its intention.
 -->
 
 <style>
