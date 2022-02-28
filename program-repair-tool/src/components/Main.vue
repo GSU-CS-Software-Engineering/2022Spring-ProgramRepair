@@ -1,6 +1,6 @@
 <!--
 There are some aspects of this file that require further investigation.
-Right now these are detailed on lines 90, 100, 102, and 115.
+Right now these are detailed on lines 90, 100, and 102.
 -->
 
 <!--
@@ -112,7 +112,6 @@ export default {
         /*
         This method updates the code output displayed, by displaying each part of the value array line-by-line.
         Interestingly, this method does not clear prexisting output, it appends to it. We may want to change this.
-        Unsure where this method recieves its value parameter, likely shown somewhere else, probably in the definition of the event itself. Will find it.
         */
         updateOutput(value) {
             for(let i in value) {
