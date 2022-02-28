@@ -61,7 +61,7 @@ export default {
         Draggable
     },
     //This component has a prop called problem, which is an Object.
-    //It is a prop as opposed to data so that a value can be passed in from a higher level component that uses it, and this is shown in Main.vue line 21.
+    //It is a prop as opposed to data so that a value can be passed in from a higher level component that uses this one, and this is shown in Main.vue line 21.
     props: {
         problem: Object
     },

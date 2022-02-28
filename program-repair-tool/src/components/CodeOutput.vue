@@ -1,5 +1,5 @@
 <!--
-Right now there is a minor uncertainty on line 31.
+Right now there is a minor uncertainty on line 32.
 -->
 <!--
 Below is this component's template.
@@ -28,6 +28,7 @@ export default {
 
     /*
     Below this component is given a name and a prop, which is an array called output.
+    output being a prop means that a value can be passed in by a higher level component that uses this one.
     I am uncertain why this component has a name while others do not, or even if it matters.
     */
 
