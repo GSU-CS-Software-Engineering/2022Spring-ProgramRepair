@@ -1,6 +1,6 @@
 <!--
 There are some aspects of this file that require further investigation.
-Right now these are detailed on lines 90, 100, and 102.
+Right now these are detailed on lines 90, 101, and 103.
 -->
 
 <!--
@@ -88,6 +88,7 @@ export default {
                     //The code is that of the current problem, except shuffled by a method defined below.
                     code: this.shuffle(cur_problem.code), // Object Array
                     //I am unsure what this key attribute is for or why it is set to the current problem's code, I'll have to discover this elsewhere.
+                    //n: :key is used as a hint or replacement in v-for typically. Used to update the HTML.
                     key: cur_problem.code,  // Object Array
                     //The answer is set to that of the current problem.
                     answer: cur_problem.answer, // String
@@ -131,6 +132,7 @@ export default {
         We may want to modify this a bit later, at it is very possible that the first element will not be moved, and the method seems a bit restricted with how variable its shuffles are.
         Oh wait, we probably won't be using this method...
         Never mind.
+        n: is this used to shuffle the problems on the homepage?
         */
         shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
