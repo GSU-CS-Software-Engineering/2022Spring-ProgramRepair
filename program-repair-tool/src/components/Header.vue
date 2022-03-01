@@ -1,5 +1,5 @@
 <!--
-There is currently an uncertainty on lines 33 and 53.
+There is currently an uncertainty on lines 33 and 54.
 -->
 <!--
 The script segment below pertains to the login functionality, which will be removed from the project.
@@ -31,6 +31,7 @@ It has a navbar which has three router links, each one directing the user to a d
         <div class="navbar-end">
             <!--
             I cannot find a class called navbar-item and am uncertain if one exists at all. Could possibly originate from Bulma CSS.
+            n: https://bulma.io/documentation/components/navbar/
             -->
             <div class="navbar-item">
                 <div class="buttons">
@@ -52,7 +53,7 @@ It has a navbar which has three router links, each one directing the user to a d
 export default {
     //Once more, not certain why this component has a name while others do not.
     name: 'Header',
-    //The following methods will be removed, as they pertain to loggin in and out.
+    //The following methods will be removed, as they pertain to logging in and out.
     methods: {
         // Log the user in
         login() {

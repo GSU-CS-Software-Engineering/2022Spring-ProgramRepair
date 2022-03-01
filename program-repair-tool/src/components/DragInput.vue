@@ -1,5 +1,5 @@
 <!--
-Uncertainties currently reside on lines 27, 29, 86, 108, and 117.
+Uncertainties currently reside on lines 27, 29, 87, 109, and 118.
 -->
 <!--
 Below is the template for this component.
@@ -52,6 +52,7 @@ Below is the template for this component.
 import Draggable from 'vue3-draggable'
 /*
 Unsure why an asterisk was needed to import from Interpreter.js, importing semantics can be looked up if needed.
+n: it seems that the asterisk imports everything from the file instead of designated portions. This is a wildcard import. Not recommended generally but still used.https://rules.sonarsource.com/javascript/RSPEC-2208
 */
 import * as Interpreter from "./interpreter/Interpreter.js"
 

@@ -43,6 +43,7 @@ export default {
 <!--
 Below is the style, and again, the scoped boolean is deprecated.
 Not sure why the removed the margin setting, may experiment with that.
+n: margin is set to auto in CreatProblems; should it be the same everywhere?
 -->
 
 <style scoped>
