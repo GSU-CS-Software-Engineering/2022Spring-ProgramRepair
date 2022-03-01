@@ -1,3 +1,7 @@
+/*
+This entire file is concerned with authorizing logins.
+Seeing as login functionality will not be a part of our project, this file can be ignored.
+*/
 // utils/useAuth0.js
 import createAuth0Client from '@auth0/auth0-spa-js';
 import { reactive } from 'vue';

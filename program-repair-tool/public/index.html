@@ -1,16 +1,32 @@
+<!--
+Right now there are uncertainties on lines 19 and 21.
+-->
+<!--
+Below is the initial html page.
+-->
 <!DOCTYPE html>
+<!-- Unsure why lang is specified and set to nothing. -->
 <html lang="">
   <head>
     <meta charset="utf-8">
+    <!-- 
+    The following line tells Microsoft browsers to view the webpage as the highest version possible.
+    Microsoft Edge will view it as an Edge page, Internet Explorer 9 will view it as an Internet Explorer page, etc.
+    -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- The following line tells the page to match the display width of the device it's viewed on and to set the zoom to 100% initially. -->
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!-- I am uncertain where the base url is defined right now, if anywhere, but things seem to be working fine. -->
     <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+    <!-- I am uncertain where this title is originating at the moment, I believe it is set somewhere in the configuration files. -->
     <title><%= htmlWebpackPlugin.options.title %></title>
   </head>
   <body>
     <noscript>
+      <!-- This is what is displayed in the event that the user's browser does not support scripts or if they have them disabled. -->
       <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
     </noscript>
+    <!-- The div below will hold src/App.vue, as it is mounted there in src/main.js -->
     <div id="app"></div>
     <!-- built files will be auto injected -->
   </body>
