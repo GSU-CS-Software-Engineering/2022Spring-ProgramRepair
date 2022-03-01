@@ -1,3 +1,10 @@
+<!--
+There is currently an uncertainty on lines 33 and 53.
+-->
+<!--
+The script segment below pertains to the login functionality, which will be removed from the project.
+-->
+
 <script setup>
 import { useAuth0, AuthState } from "../utils/useAuth0";
 const { login, logout, initAuth } = useAuth0(AuthState);
@@ -5,6 +12,10 @@ const { login, logout, initAuth } = useAuth0(AuthState);
 initAuth();
 </script>
 
+<!--
+Below is the template for this component.
+It has a navbar which has three router links, each one directing the user to a different page.
+-->
 <template>
     <nav class="navbar">
         <div class="row">
@@ -14,7 +25,13 @@ initAuth();
                 <li> <router-link class="link" to="/create-problems">Create Problem</router-link></li>
             </ul>
         </div>
+        <!--
+        The following div will be removed, since it is concerned with the login/logout button.
+        -->
         <div class="navbar-end">
+            <!--
+            I cannot find a class called navbar-item and am uncertain if one exists at all. Could possibly originate from Bulma CSS.
+            -->
             <div class="navbar-item">
                 <div class="buttons">
                     <!-- Check that the SDK client is not currently loading before accessing is methods -->
@@ -29,13 +46,13 @@ initAuth();
         </div>
     </nav>
 </template>
+
 <script>
 
-
-
-
 export default {
+    //Once more, not certain why this component has a name while others do not.
     name: 'Header',
+    //The following methods will be removed, as they pertain to loggin in and out.
     methods: {
         // Log the user in
         login() {
@@ -55,6 +72,10 @@ export default {
     }
 }
 </script>
+
+<!--
+Below is the styling for this component, and again the scoped boolean is deprecated and should not be used.
+-->
 
 <style scoped>
     img {
