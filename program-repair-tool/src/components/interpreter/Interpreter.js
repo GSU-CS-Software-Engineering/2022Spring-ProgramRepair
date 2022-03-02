@@ -291,6 +291,7 @@ export class Interpreter {
                         conditions: conditions
                     }
                     // Storing (else if())'s following a standard if statement
+                    //error:unexpected lexical decalration in case block (no-case-declaraton) 294-295
                     let else_container = []
                     let placeHolder = i
 
@@ -534,6 +535,7 @@ export class Interpreter {
                         console.log("Error with incrementer in for loop")
                     }
                     let loop_var = line[0]
+                    //previosuly defined variable
                     var inc_value = line[1]
 
                     console.log(loop_var + "   " + inc_value)
@@ -546,6 +548,7 @@ export class Interpreter {
             }
 
             // Running the for loop here
+            //unexpected contant condition
             while (true) {
                 
                 for_interpreter = new Interpreter(key.blocks_list, this.registers)
