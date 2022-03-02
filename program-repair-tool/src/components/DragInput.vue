@@ -27,6 +27,7 @@ Below is the template for this component.
             The code v-slot:item="{ item }" specifies that this slot, which is contained in this template, will have an attribute named item with the value of an attribute named item from the parent, though I am uncertain about where exactly this is coming from.
             For more information on v-slot check: https://vuejs.org/guide/components/slots.html
             There is a div with a draggable-item class, which is defined in the style below, and within the div the item's title is displayed. Still uncertain on item's origin.
+           unexoected mutatation of problem prop line 33
             -->
             <draggable
                 v-model="problem.code"
