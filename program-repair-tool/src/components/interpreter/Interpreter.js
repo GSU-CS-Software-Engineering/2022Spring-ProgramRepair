@@ -194,6 +194,7 @@ export class Interpreter {
                         var value = val.indexOf(";") > 0 ? val.slice(0,-1) : val
                         /*
                         Once again the instruction is given the func value "lw", which is a bit of a misnomer, actually.
+                        (Well, maybe not. I am a bit sleep deprived and what's important is how it works.)
                         Will need to investigate that.
                         var1 is set to the name of the variable, which precedes the = sign.
                         Uncertain why this isn't just done with line[1].
@@ -784,22 +785,55 @@ export class Interpreter {
     }
 
     // Instructions execute after each instruction is decoded, so it reads and executes code from top to bottom.
+    /*
+    Like the previous comment says, this method is run after each instruction is decoded.
+    We may want to do all decoding first and then execute the instructions one-by-one, depending on the situation.
+    */
     execute(instruction) {
+        //The variable key is set to equal instruction, uncertain why they didn't just use the instruction parameter.
         let key = instruction
+        //The following is done if func is "lw".
         if (key.func == "lw") {         // Loading value to registers
+            //If key has a numeric value, set the variable in registers with the same name as key's var1 to equal key's value.
             if (isNumeric(key.value)) {
                 this.registers[key.var1] = key.value
             }
             
 
             // Assigning an expression to a variable
+            /*
+            As the above comment states, the following is intended to run if an expression is being assigned to a variable.
+            Howver, I do not see why the value's length has to be checked.
+            If func is "lw", value will either be numeric or an expression.
+            This could just be an else.
+            */
+
             else if (key.value.length > 2) {
 
                 // Extracting variable values if there are any
+                /*
+                The following line replaces any variables in the expressions with their values and saves it in the expression variable.
+                Once again this does not seem to check for the case where an unitialized variable is used.
+                Perhaps we ought to include that detection in the decode method.
+                */
                 let expression = key.value.map(x => Object.prototype.hasOwnProperty.call(this.registers, x) ? this.registers[x] : x);
                 // Computing mult/div then add/sub
+                /*
+                The following two loops complete the math expression.
+                The first loop performs any multiplication and division while the second loop performs any addition and subtraction, in accordance with the order of operations.
+                */
                 for (let i = 0; i < expression.length; i++) {
+                    //x becomes the expression element being currently iterated over.
                     let x = expression[i]
+                    /*
+                    If the multiplication sign is seen, then multiplication is performed on the numbers on either side.
+                    The product is rounded to the nearest integer. May want to change this later.
+                    The result is then substituted into the expression, replacing where the operands and multiplication symbol were.
+                    It should be noted that this way of evaluating expressions assumes that they are properly formatted, which may not be the case.
+                    We may need to check for that.
+                    This same process is done for division, addition, and subtraction.
+                    Potential for code reuse.
+                    */
                     if (x == "*") {
                         let new_val = Math.round(mips.mult(expression[i-1], expression[i+1]))
                         expression.splice(--i, 3, new_val)
@@ -821,25 +855,48 @@ export class Interpreter {
                         expression.splice(--i, 3, new_val)
                      } 
                 }
+                /*
+                The final result, which should be all that is left in expression, is then saved to the appropriate variable.
+                Uncertain why the join method is needed here, perhaps the value stored in registers needs to be a String.
+                */
                 this.registers[key.var1] = expression.join()
             } 
  
         }
+        /*
+        As the old comment states, this pice of code is intended for adding variables together.
+        While this piece of code is well written, its use is highly questionable considering where the "add" func is used in the decode method.
+        */
         else if (key.func == "add") {   // Used for adding VARIABLES ONLY 
+            //reg_val is the name of the variable to save the result to.
             let register_name = key.reg_val
             let val1 = this.registers[key.var1]
             let val2 = this.registers[key.var2]
+            //Once again, the result is rounded for some reason.
             let new_val = Math.round(mips.add(val1, val2))
+            //The result is stored in the appropriate variable.
             this.registers[register_name] = new_val
         }
+        /*
+        The old comment states that this code piece is used for addition related to integer values and variables.
+        Once again, this calls into question the existence of the previous code piece.
+        A lot of this execution code appears redundant and in need of reworking.
+        */
         else if (key.func == "addi") {  // Flexible addition for both integer vals and variable vals
             let register_name = key.reg_val
             // Next 2 lines checks which code entries are integers vs a preexisting register value (variable)
+            /*
+            I'm not even sure if the above comment is right but I doubt it.
+            Instead, if var1 or var2 is numeric, then val1 or val2 should just be set to that number.
+            Otherwise, val1 or val2 should be set to the value of the variable with var1 or var2's name.
+            In general, keen awareness should be maintained of what this program is currently capable of.
+            */
             let val1 = !isNumeric(this.registers[key.var1]) ? key.var1 : this.registers[key.var1]  
             let val2 = !isNumeric(this.registers[key.var2]) ? key.var2 : this.registers[key.var2] 
             let new_val = Math.round(mips.add(val1, val2))
             this.registers[register_name] = new_val
         }
+        //The following is analogous to "add". Roughly the same comments apply.
         else if (key.func == "sub") {   // Used for subtracting VARIABLES ONLY
             let register_name = key.reg_val
             let val1 = this.registers[key.var1]
@@ -847,6 +904,7 @@ export class Interpreter {
             let new_val = Math.round(mips.sub(val1, val2))             
             this.registers[register_name] = new_val
         }
+        //The following is analogous to "addi". Roughly the same comments apply.
         else if (key.func == "subi") {  // Flexible subtraction for both integer vals and variable vals
             let register_name = key.reg_val
             let val1 = !isNumeric(this.registers[key.var1]) ? key.var1 : this.registers[key.var1]
@@ -854,6 +912,7 @@ export class Interpreter {
             let new_val = Math.round(mips.sub(val1, val2))                
             this.registers[register_name] = new_val
         }
+        //The following is analogous to "addi" and "subi". Roughly the same comments apply.
         else if (key.func == "mult") {  // Flexible multiplication
             let register_name = key.reg_val
             let val1 = !isNumeric(this.registers[key.var1]) ? key.var1 : this.registers[key.var1]
@@ -861,6 +920,7 @@ export class Interpreter {
             let new_val = Math.round(mips.mult(val1, val2))           
             this.registers[register_name] = new_val
         }
+        //The following is analogous to "addi", "subi", and "mult". Roughly the same comments apply.
         else if (key.func == "div") {   // Flexible divison
             let register_name = key.reg_val
             let val1 = !isNumeric(this.registers[key.var1]) ? key.var1 : this.registers[key.var1]
@@ -868,6 +928,9 @@ export class Interpreter {
             let new_val = Math.round(mips.div(val1, val2))               
             this.registers[register_name] = new_val
         }
+        //There is a desperate need for code reuse with the above code pieces.
+
+
         else if (key.func == "for") {
             var for_interpreter = new Interpreter(key.blocks_list, this.registers)
             for_interpreter['conditions'] = key.conditions
