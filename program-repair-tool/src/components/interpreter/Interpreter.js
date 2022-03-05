@@ -16,7 +16,7 @@ export class Interpreter {
         /*
         An interpreter object's registers will be set to the registers parameter if it is not undefined.
         If the registers parameter is undefined, then the interpreter object's registers will be set to an empty object.
-        They seem to be the variables that the interpreter will keep track of, uncertain of how these are placed in as of now.
+        The properties kept in registers will be the variables that the interpreter will keep track of.
         */
         this.registers = typeof(registers) != "undefined" ? registers : {}  // Variables that are stored and/or manipulated
         // List of code instruction blocks. Separated by line number
@@ -41,9 +41,8 @@ export class Interpreter {
     run() {
         /*
         The fetch and decode methods are called if this object's blocks_list is not undefined.
-        If this object's blocks_list is undefined, the a message is output to the console.
+        If this object's blocks_list is undefined, then a message is output to the console.
         This is likely the intention that answers the uncertainty on line 29.
-        Uncertain if the comparison to determine if blocks_list is undefined is correct, should test to confirm.
         */
         if (typeof this.blocks_list !== 'undefined') {
             this.fetch()
@@ -71,8 +70,9 @@ export class Interpreter {
         
     }
     /*
-    Given the gargantuan size of this function, I am unsure of its overall functioning, will update this comment later.
-    Depending on how it's structured, we may consider breaking it down into multiple functions to make it more manageable.
+    The gargantuan function below is in charge of reading over the code line by line, creating instructions and calling the execute function on them.
+    We will consider breaking it down into multiple functions to make it more manageable.
+    We may also want to add error checking to this method.
     */
     decode() {  // Instruction should be a component with attributes that represent registers
                 // and extract the values from them as well as the function being performed
@@ -99,7 +99,7 @@ export class Interpreter {
 
         /*
         The following for loop that iterates over every value of kw_vals is the remainder of this entire function, and is quite large.
-        As such I do not yet know its entire functionality, will update this comment once I do.
+        It iterates over each element of kw_vals, creating an instruction in a way dependent on the keyword found in the current element and then calling the execute method on that instruction.
         */
 
         for (let i = 0; i < kw_vals.length; i++) {        // Go through each line given in the problem
@@ -114,8 +114,7 @@ export class Interpreter {
             // This should also prevent variable initialization errors.
             /*
             If this object's registers attribute has a property with the same name as the value of keyword, then keyword is set to have value "variable".
-            I am very uncertain of what the intention of this is, especially since the registers attribute will always be an empty object at first given the way the interpreter is called in DragInput.vue
-            Perhaps the registers attribute will change throughout the loop, will update this comment after I find out.
+            This is used to represent that a previously declared variable name has been detected as the first word of the current element of kw_vals.
             */
 
             if (Object.prototype.hasOwnProperty.call(this.registers, keyword)) { 
@@ -125,7 +124,12 @@ export class Interpreter {
             // Have to declare these outside of switch: for/if
             /*
             All of these variables are declared for use later.
-            Uncertain of their functionality yet, will update this comment once that can be determined.
+            new_blocks_list will contain statements to be executed within a for loop or if condition, if applicable.
+            conditions will be used to store conditions found in between the parentheses of a for loop or if-statement, if applicable.
+            block_start will hold the line number of the first line of a for loop or if-statement, if applicable.
+            block_end will hold the line number of the last line of a for loop or if-statement, if applicable.
+            scope_stack will be used in order to discover the beginning and end of a for loop or if-statement block, if applicable.
+            block_len will hold the length of the stack in lines, which will exclude the last line with the closing curly bracket but include the line where the for or if reserved word is used, if applicable.
             */
             let new_blocks_list;
             let conditions;
@@ -135,8 +139,8 @@ export class Interpreter {
             let block_len;
 
             /*
-            Uncertain of the overall functionality of this switch statement, as it is nearly the rest of the entire function and is quite large.
-            Will update this comment once I know.
+            This switch statement is nearly the rest of the entire function and is quite large.
+            It creates an instruction in a way dependent on what keyword is.
             */
 
             switch (keyword) {
@@ -163,10 +167,11 @@ export class Interpreter {
                         The instruction object is populated with attributes and values.
                         lw stands for load word, and can be learned about here: https://www3.ntu.edu.sg/home/smitha/fyp_gerald/lwinstruction.html
                         This doesn't seem to exactly be loading a word from anywhere, as a variable is just being declared.
-                        Uncertain as to how the organization is affected with the func being "lw", will look into this.
+                        In fact, a variable being just declared does nothing in execution, but should affect decoding somehow to keep track of what variables there are.
                         var1 contains the name of the variable being declared.
                         Uncertain why there is a value attribute when there is no value in this situation, a variable is just being declared.
                         Also uncertain why a semicolon is sought and eliminated if it exists from the second element in the line when this was already done previously.
+                        That is also done very frequently, should maybe do some code reuse.
                         */
                             instruction = {
                             func: "lw",       // func should represent the function given in the instruction
@@ -177,7 +182,7 @@ export class Interpreter {
                     }
                     // For initializing a variable e.g. (int a = 5;)
                     /* 
-                    The following is executed if this is an int variable being declared and initialized to a simple value.
+                    The following is executed if this is an int variable being declared and initialized to a value.
                     Any line with four words that starts with int will be recognized as such, so we need to keep that in mind.
                     */
                     else if (line.length == 4) {
@@ -195,14 +200,9 @@ export class Interpreter {
                         /*
                         Once again the instruction is given the func value "lw", which is a bit of a misnomer, actually.
                         (Well, maybe not. I am a bit sleep deprived and what's important is how it works.)
-                        Will need to investigate that.
                         var1 is set to the name of the variable, which precedes the = sign.
                         Uncertain why this isn't just done with line[1].
-                        The instruction's value is set to the the value attribute, unless the registers object has a property with the same name as value's value, in which case, the instruction's value will be the value as the registers' value for its property named as value's value.
-                        Needless to say, this is immensely confusing, but even when you understand it, it still does not make sense.
-                        I see no reason why registers would have a property named a value, it would make far more sense if it had a property named the variable name.
-                        Indeed, this does no check to see if this variable was previously declared, which would cause an error.
-                        Absolutely uncertain of the design of this code and its implications, will definitely have to revisit it after perusing more of the code.
+                        The instruction's value will be set to the value attribute's value if that is a number, or, if the value attribute's value is the name of a variable in registers, then that variable's value is saved as the instruction's value instead.
                         */
                         instruction = {
                             func: "lw",       // func should represent the function given in the instruction
@@ -220,7 +220,7 @@ export class Interpreter {
                     else if (line.length > 4) {
                         /*
                         The variable expression is set by first taking only the expression portion of the line using splice, and then eliminating the semicolon from each element if one exists.
-                        Once again the instruction is saved with func "lw", uncertain why this is done, may need to change this later.
+                        Once again the instruction is saved with func "lw".
                         The instruction's var1 will be the variable name, though I am uncertain why it isn't just selected with line[1].
                         The value of the instruction will be the expression. Will check on how this is used later.
                         */
@@ -248,7 +248,7 @@ export class Interpreter {
                     /*
                     If the line has more then three words then it is understood to involve an expression.
                     Like before, an expression variable is set to be only the expression itself, with all semicolons removed.
-                    Once again, uncertain why the instruction's func is set to lw.
+                    Once again, the instruction's func is set to lw.
                     var1 is set to the name of the attribute, uncertain why it wasn't just done with line[0], unless the code was supposed to be reused as its own function.
                     It should be, as this process is repetitive.
                     The instruction's value is set to be the expression.
@@ -267,14 +267,17 @@ export class Interpreter {
                     Otherwise, the following is done if the line contains a word "+", that is not at the beginning of the line.
                     The indexOfOperator variable is set to the index of "+".
                     If neither addend is numeric, the instruction's func is set to "add".
+                    The "add" instruction only supports adding variables.
                     Otherwise, it's set to "addi".
-                    Uncertain what this means as of now, will update this comment later.
+                    The "addi" instruction can add variables as well as numbers.
+                    Uncertain why "add" even exists then.
                     The instruction's reg_val will become the variable name.
                     The instruction's var1 and var2 will become the addends, with any semicolons removed from the second addend.
                     At least, that seems to be the intention. There is an error, as var2 will actually be set to the operator if the second addend does not contain a semicolon.
                     This piece of code is a little questionable, as no valid Java code is three words or less and has a "+" as one of those words.
                     This piece of code also assumes that this line is three words long, which may be benign but should still be kept in mind.
                     Will update this comment if I find anything that justifies this.
+                    I have not.
                     */
                     else if (line.indexOf("+") > 0) { // check if we need to use add or addi function
                         indexOfOperator = line.indexOf("+")
@@ -288,12 +291,10 @@ export class Interpreter {
                     }
                     /*
                     Otherwise, if the line is three words long and has the word "+=" that is not at the beginning, the following is done.
-                    The instruction's func is set to "addi", possibly implying that addi specifies adding an integer to a variable.
+                    The instruction's func is set to "addi".
                     The instruction's reg_val is set to the variable name.
                     The instruction's var1 is also set to the variable name.
-                    The instruction's var2 is set to the integer being added to the variable, with any semicolons removed.
-                    It should be noted that this code may not account for the case of something like "a += b" if it is supposing that there will always be a number after to +=.
-                    Will update this comment and clear everything up after I find out about "addi".
+                    The instruction's var2 is set to what is being added to the variable, with any semicolons removed.
                     */
                     else if (line.indexOf("+=") > 0 && line.length == 3) {  // Only works if line length == 3; ( num += 2 ) and ( num += num )
                         instruction = {
@@ -349,7 +350,7 @@ export class Interpreter {
                     Otherwise, if the second word is "=" and the line is three words long, the following is done.
                     This is assumed to be simply assigning a value to an already declared variable.
                     Once again, I have not seen error checking for if the variable has not been declared yet.
-                    The instruction's func is set to addi, uncertain why this is the case right now.
+                    The instruction's func is set to addi.
                     The instruction's reg_val is set to be the name of the variable being modified.
                     The instruction's var1 value depends on if registers has a property named the third word, so, if it is a variable that has been seen before.
                     If it does have a property with this name, then it checks to see if the value stored in registers for the property is the same as the name of the property, as that is the third word.
@@ -357,7 +358,8 @@ export class Interpreter {
                     In any case, if they are equivalent, then var1 will equal 0, and if not then it will equal the value that the registers property contains.
                     If registers does not have a property named the third word, then the third word is just saved in var1 as is.
                     This is the case if the third word is not a variable, or not a varialbe that has been seen before.
-                    The instruction's var2 is set to 0, I am uncertain why this is done, but it likely has to do with the definition of "addi".
+                    Variables are detected and turned into their values when addi is performed anway, so var1 should just be sset to line[2], as far as I can tell.
+                    The instruction's var2 is set to 0, as, since this is just assigning var1 to reg_val, it is the same as reg_val = var1 + 0, so the way addi is implemented can be reused.
                     Notably, semicolons do not seem to be removed here. Could be problematic.
                     */
                     else if (line[1] == "=" && line.length == 3) {  // Assigning a single value to a preexisting register (a = 5)
@@ -537,7 +539,7 @@ export class Interpreter {
                     The first line will be line 0, in this case.
                     scope_stack will be used to keep track of the nesting of if statements.
                     new_blocks_list will eventually contain the statements withtin the if block.
-                    Uncertain what will be considered the if block for the time being.
+                    The if block refers to all lines included in an if statement, but does not include any else-if or else statemets.
                     */
                     block_start = 0
                     block_end = 0
@@ -638,8 +640,8 @@ export class Interpreter {
                     // Storing (else if())'s following a standard if statement
                     //error:unexpected lexical decalration in case block (no-case-declaraton) 294-295
                     /*
-                    Unsure of what the above comments are talking about right now.
-                    else_container is used to store any instructions related to the blocks found in this process.
+                    Unsure of what the above comment is talking about right now.
+                    else_container is used to store any instructions related to the blocks found in this process of storing any else-if or else statements that follow and if-statement.
                     */
                     let else_container = []
                     //Currently uncertain why this variable is needed in the first place.
@@ -664,7 +666,7 @@ export class Interpreter {
                             */
                             let line = kw_vals[i].join(' ')
                             conditions = line.split("(")[1].split(")")[0]
-                            //I have not reviewed how this get_stack_scope function works yet, will update this comment when I do.
+                            //The scope object returned by the get_stack_scope method contains the calculated block start, block end, and length of the next block starting with "else", which in this case would be an else-if block.
                             let scope = get_stack_scope(kw_vals, "else")
                             /*
                             Like before, the blocks_list will now be a version of itself without the else if block lines, as will kw_vals.
@@ -677,7 +679,7 @@ export class Interpreter {
                             new_blocks_list.pop();
                             /*
                             An object called else_if_instruction is created.
-                            Its func is given the value "if", and I am uncertain why this is the case for the moment.
+                            Its func is given the value "if", as it will eventually be executed like an if statement, given that its execution is dependent on its conditions.
                             If new_blocks_list has more than one element, else_if_instruction's blocks_list is set to a String with each element separated by newline.
                             Otherwise, else_if_instruction's block_list is set to the sole element of new_blocks_list.
                             This could be assuming that new_blocks_list cannot be empty, which is indeed possible if the student makes a mistake.
@@ -692,8 +694,9 @@ export class Interpreter {
                             //Add the else_if_instruction to the else_container.
                             else_container.push(else_if_instruction)
                             /*
-                            The instruction's else-if propert is set to else_container.
-                            Uncertain of the semantics behind how this works for the moment.
+                            The instruction's else-if property is set to else_container.
+                            This effectively updates the property else-if to have the value of else_container with the new block added.
+                            This is a bit wasteful, as this update can be done after all blocks found are pushed to else_container, so, after the loop is done executing.
                             */
                             instruction["else-if"] = else_container
                             
@@ -701,7 +704,7 @@ export class Interpreter {
                         // Else
                         //This is executed if an else block was located.
                         else {
-                            //I have not reviewed how this get_stack_scope function works yet, will update this comment when I do.
+                            // //The scope object returned by the get_stack_scope method contains the calculated block start, block end, and length of the next block starting with "else", which in this case would be an else block.
                             let scope = get_stack_scope(kw_vals, "else")
                             /*
                             Like before, the blocks_list will now be a version of itself without the else block lines, as will kw_vals.
@@ -735,7 +738,7 @@ export class Interpreter {
                         }
 
                         /*
-                        The kw_vals placeHolderth element is not an object or the placeHolder index is out of bounds, terminate this loop.
+                        If the kw_vals placeHolderth element is not an object or the placeHolder index is out of bounds, terminate this loop.
                         I am certainly uncertain why this is done.
                         See notes above this loop as to why.
                         */
@@ -806,6 +809,9 @@ export class Interpreter {
             Howver, I do not see why the value's length has to be checked.
             If func is "lw", value will either be numeric or an expression.
             This could just be an else.
+            Actually, "lw" can be used when a variable is just being declared, so the else if is needed here.
+            However, this shows that the program does nothing when it sees a variable being declared and not initialized.
+            This should be altered as a part of error checking.
             */
 
             else if (key.value.length > 2) {
@@ -941,6 +947,7 @@ export class Interpreter {
             /*
             The for_interpreter's conditions are set to the conditions provided in the instruction.
             Uncertain how this is used for now.
+            It doesn't appear to be used at all.
             */
             for_interpreter['conditions'] = key.conditions
             //The variable loop_variable is set to an array containing all the words in the first element of conditions, like "int" "i" "=" "4", for example.
@@ -1128,7 +1135,7 @@ export class Interpreter {
                 A new interpreter is created with this instruction's blocks_list and the main interpreter's registers.
                 I thought that this could be erroneous, as another interpreter with this name was already created earlier and it had its registers altered in performing the logic of the first part of conditions.
                 Then I saw, they all manipulate the same registers object, the one belonging to the main interpreter.
-                The line of code below is necessary, although I am uncertain as of now why. It is most likely due to the way the interpreter executes.
+                The line of code below is necessary, although I am uncertain as of now why. It is most likely due to the way the interpreter executes, as well as because of the way the output is added to the overall output iteration by iteration.
                 This does create some implications when it comes to how variable scope is treated with regards to for loops, we should keep our eyes on that.
                 It should be noted that this also leads to a form of recursion, if a nested for loop is found then the for_interpreter will perform this exact same process within itself.
                 */
@@ -1170,7 +1177,7 @@ export class Interpreter {
             This method is very similar to the one used for func "for" in that determines if a block should be executed.
             Code reuse should be done here.
             The only inconsistency is that this method takes in a parameter, conditions, instead of accessing conditions directly from the instruction.
-            Uncertain why there is a difference here.
+            Uncertain why there is a difference here, if there is a reason.
             */
             let branch = (conditions) => {
                 let line = conditions.trim().split(" ")
@@ -1363,6 +1370,7 @@ This method is almost identical to procedures done before to determine these val
 This method should be used in those cases instead of the same code being written more than once.
 keyword would just be passed in as "if" or "for".
 In fact, this method is more correct than what was written earlier, as it actually iterates through every word of the current line of kw_vals.
+May need to add some error checking either inside of it or outside of it, in the event that block delimiters are never found.
 */
 function get_stack_scope(kw_vals, keyword) {
     let block_start = 0
