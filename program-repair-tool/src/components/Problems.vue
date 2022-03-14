@@ -1,29 +1,41 @@
 <!--
-Right now there are uncertainties on lines 11, 15, and 47.
+Right now there are uncertainties on lines 17 and 59.
 -->
 <!--
 Below is this component's template.
+In it is a div that uses a problems class that is defined in the syle section, as well as several Bulma CSS classes.
+The columns class specifies that this div will hold columns.
+The is-vcentered class specifies that column elements will be vertically centered with each other.
+The is-multiline class will cause a new row to be started automatically when the current one runs out of room.
+The is-centered class will make it so that columns will be horizontally centered.
+For example, if there are an odd number of problems, the last problem card, having its own row, will be aligned to the center and not the left.
+For more information, see: https://bulma.io/documentation/columns/options/
 -->
 <template>
-    <div class="problems">
-        <h3>Problem Selection</h3>
-        <!-- 
-        I cannot find a CSS class called problem-list, I am uncertain if it is elsewhere or was just never used.
-        -->
-        <ul class= "problem-list">
+    <div class="problems columns is-vcentered is-multiline is-centered">
             <!--
             Again, not fully certain of semantics about the key, but that may not be a problem.
-            A list element is created for every problem in the problems list.
-            When a problem's name is listed it will be a link that takes the user to the main page after setting the current problem to the one clicked on, so that will be the problem displayed on the main page.
-            A remove button is also next to each problem, and will run the removeProblem function on the problem's name when clicked.
-            Underneath all the problems is a print button, which will print all problems to the console.
+            A div is created for every problem in the problems list.
+            This div will be a column and take up half the width of the screen.
             -->
-            <li v-for="problem in problems" :key="problem">
-                <a href="./main" @click="setProblem(problem)"><strong>{{ problem.name }}</strong></a>
-                <button class="removeProblem" @click="removeProblem(problem.name)">remove</button>
-            </li>
-        </ul>
-        <button @click="print">Print</button>
+            <div v-for="problem in problems" :key="problem" class="column is-half">
+                <!--
+                    Within each div is a card, which will call the setProblem method with the current problem as a paramater when clicked.
+                    The card's header will be the problem's name, and its content will be the problem's prompt.
+                -->
+                <div class="card" @click="setProblem(problem)">
+                    <header class="card-header">
+                        <p class="card-header-title">
+                            {{ problem.name }}
+                        </p>
+                    </header>
+                    <div class="card-content">
+                        <div class="content">
+                            {{ problem.prompt }}
+                        </div>
+                    </div>
+                </div>
+            </div>
     </div>
 </template>
 
@@ -54,17 +66,27 @@ export default {
         }
     },
     methods: {
-        //This method prints the problems to the console.
+        /*
+        This method prints the problems to the console.
+        It is unused as of now.
+        */
         print() {
             console.log(this.problems)
         },
         // For loading a problem that is clicked on
-        //This method sets the current problem to the one provided as an argument, converting it to a JSON formatted String first, and then prints the current problem to the console.
+        /*
+        This method sets the current problem to the one provided as an argument, converting it to a JSON formatted String first, and then prints the current problem to the console.
+        It brings the user to the solving page after this is done.
+        */
         setProblem(problem) {
             window.localStorage.setItem('cur-problem', JSON.stringify(problem));
-            console.log(JSON.parse(window.localStorage.getItem("cur-problem")))
+            console.log(JSON.parse(window.localStorage.getItem("cur-problem")));
+            window.location.href="./main";
         },
-        //This method deletes the problem that has the same name as the itemName argument.
+        /*
+        This method deletes the problem that has the same name as the itemName argument.
+        It is unused as of now.
+        */
         removeProblem(itemName) {
             //The confirm method will alert the user with this message, and only return true if they click "OK" and not "Cancel".
             if (confirm("Are you sure you want to delete this problem?")) {
@@ -91,13 +113,14 @@ export default {
 </script>
 
 <!--
-This is the component's style, and once again the scoped boolean is deprecated and should be removed.
+This is the component's style.
+Only the problems class is actually used, but the others are kept for now just in case.
 -->
 
-<style scoped>
+<style>
     .problems {
         margin: auto;
-        width: 50%;
+        padding: 10px;
         display: block;
     }
     .removeProblem {

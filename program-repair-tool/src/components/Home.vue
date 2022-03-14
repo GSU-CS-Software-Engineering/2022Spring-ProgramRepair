@@ -6,7 +6,8 @@ The tag <problems/> tells Vue to insert the component named "problems" in this l
 
 <template>
     <div class="home-container">
-        <h1>Home</h1>
+        <h1 class="title has-text-left p-2">Welcome to the Program Repair tool!</h1>
+        <h2 class="subtitle has-text-left p-2">Please click on a problem below to be taken to a page where you can attempt to solve it.</h2>
         <problems/>
         
     </div>
@@ -38,9 +39,10 @@ A "." in front of it would specify to CSS that this is a class, which seems to b
 
 <style>
     home-container {
-        margin: auto;
-        width: 50%;
-        display: block;
+        margin: auto; 
+        width: 50%; 
+        display: block; 
         padding: auto;
+        text-align: left;
     }
 </style>
