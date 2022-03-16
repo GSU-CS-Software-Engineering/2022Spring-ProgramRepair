@@ -1,4 +1,4 @@
-var Problems = require('problems');
+var Problems = require('./problems');
 problems = new Problems();
 
 const path = require("path");
