@@ -40,6 +40,9 @@ For more information, see: https://bulma.io/documentation/columns/options/
 </template>
 
 <script>  
+
+import * as Middleware from "../utils/middleware.js";
+
 export default {
     /*
     Once again this component is named while others aren't.
@@ -61,7 +64,8 @@ export default {
     computed: {
         problems: {
             get: function() {
-                return JSON.parse(window.localStorage.getItem('problems')) || []
+                let appLayer = new Middleware.Middleware;
+                appLayer.fetchProblems();
             },
         }
     },
