@@ -1,18 +1,18 @@
-export class Middleware {
-
-    fetchProblems() {
-        console.log('In fetchProblems()');
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                console.log(this.responseText);
-                this.problems = JSON.parse(this.responseText);
-                this.$emit("saveProblems", this.problems);
+export default async function fetchProblems() {
+        const response = await fetch('http://localhost:3080/api/problemlist', {
+            headers: {
+                'Accept': 'application/json'
             }
-        };
-
-        xhttp.open("GET", "http://localhost:8080/api/problemlist", true);
-        xhttp.setRequestHeader("Content-type", "application/json");
-        xhttp.send();
+        });
+        const data = await response.json();
+        if (response.status !== 200) {
+            console.log('Error! Status: ' + response.status);
+            return '[{}]';
+        }
+        else {
+            console.log(data);
+            return data;
+        }
     }
-}
+
+

@@ -41,7 +41,7 @@ For more information, see: https://bulma.io/documentation/columns/options/
 
 <script>  
 
-import * as Middleware from "../utils/middleware.js";
+import fetchProblems from "../utils/middleware.js";
 
 export default {
     /*
@@ -64,8 +64,7 @@ export default {
     computed: {
         problems: {
             get: function() {
-                let appLayer = new Middleware.Middleware;
-                appLayer.fetchProblems();
+                console.log(fetchProblems());
             },
         }
     },
