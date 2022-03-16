@@ -3,4 +3,4 @@ var router = express.Router();
 
 var problemController = require('problemController');
 
-router.get('/problemlist', problemController.problem_list);
+router.get('api/problemlist', problemController.problem_list);

@@ -11,7 +11,7 @@ export class Middleware {
             }
         };
 
-        xhttp.open("GET", "http://localhost:8080/backend/problemlist", true);
+        xhttp.open("GET", "http://localhost:8080/api/problemlist", true);
         xhttp.setRequestHeader("Content-type", "application/json");
         xhttp.send();
     }
