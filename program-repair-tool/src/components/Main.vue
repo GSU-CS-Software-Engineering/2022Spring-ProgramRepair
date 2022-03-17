@@ -75,6 +75,7 @@ export default {
             It is converted from JSON to a JavaScript object via JSON.parse()
             */
             let cur_problem=JSON.parse(window.localStorage.getItem('cur-problem'));
+            console.log('Current problem: ', cur_problem);
             /*
                 != means unequal values
                 !== means unequal values or unequal types
@@ -135,10 +136,12 @@ export default {
         n: is this used to shuffle the problems on the homepage?
         */
         shuffle(array) {
+            console.log('Array before shuffling:', array);
             for (let i = array.length - 1; i > 0; i--) {
                 let j = Math.floor(Math.random() * (i + 1));
                 [array[i], array[j]] = [array[j], array[i]];
             }
+            console.log('Array after shuffling:', array);
             return array;
         }
     }

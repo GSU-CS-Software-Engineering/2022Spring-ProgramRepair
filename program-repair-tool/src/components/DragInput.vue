@@ -1,7 +1,4 @@
 <!--
-Uncertainties currently reside on lines 27, 29, 87, 109, and 118.
--->
-<!--
 Below is the template for this component.
 -->
 
@@ -24,9 +21,10 @@ Below is the template for this component.
             The code transition="100" does not seem to do anything, I am not sure what the intention was, but maybe we'll put time into making the interface more animated.
             The draggable component has class drop-zone, which is defined in the style section.
             There is an inner template which I assume is used to represent the content inside the draggable area.
-            The code v-slot:item="{ item }" specifies that this slot, which is contained in this template, will have an attribute named item with the value of an attribute named item from the parent, though I am uncertain about where exactly this is coming from.
+            The code v-slot:item="{ item }" specifies that this slot, which is contained in this template, will have an attribute named item with the value of an attribute named item from the parent, and this originates from Main.vue.
             For more information on v-slot check: https://vuejs.org/guide/components/slots.html
-            There is a div with a draggable-item class, which is defined in the style below, and within the div the item's title is displayed. Still uncertain on item's origin.
+            There is a div with a draggable-item class, which is defined in the style below, and within the div the item is displayed.
+            In effect this creates the blocks for each element inside the code array.
            unexoected mutatation of problem prop line 33
             -->
             <draggable
@@ -35,7 +33,7 @@ Below is the template for this component.
                 class="drop-zone">
                 <template v-slot:item="{ item }">
                     <div class="draggable-item">
-                    {{ item.title }}
+                    {{ item }}
                     </div>
                 </template>
             </draggable>
@@ -84,10 +82,9 @@ export default {
             // Converting drag/drop components to strings, then running through interpreter
             //A variable is created in order to store the string representation of the code the user has put together.
             var blocks_list = ''
-            //For each element in the problem's code, its title followed by a new line is appended to the blocks_list variable.
-            //Still uncertain about why the name title is used, or where exactly the code attribute is defined.
+            //For each element in the problem's code, its content followed by a new line is appended to the blocks_list variable.
             this.$props.problem.code.forEach(x => {
-                blocks_list += `${x.title}\n`
+                blocks_list += `${x}\n`
             })
             let undefined;  // constructor requires two arguments and has checks for undefined
             //An instance of the interpreter is created and run with the code.
@@ -106,17 +103,17 @@ export default {
             /*
             The following statement fires an updateOutput event with value output_array.
             The await keyword pauses the asynchronous function until a promise is fulfilled or rejected.
-            The code is likely intended to pause execution until the event has been recieved by the listener and acted upon.
-            For the moment I am uncertain as to if that is what this statement is actually doing, or if the await keyword is even necessary.
+            The code is to pause execution until the event has been recieved by the listener and acted upon.
             */
             await this.$emit("updateOutput", output_array)
             /*
             cur_problem is either a JavaScript object parsed from JSON retrieved from the client's machine or an object with an answer of "Hello World" if no item called cur-problem is found.
             */
             let cur_problem=JSON.parse(window.localStorage.getItem('cur-problem')) || {answer: "Hello World"};
+
+            console.log(cur_problem.answer)
             /*
             If the problem's answer matches the output array, the code is marked as correct.
-            Uncertain why this works when output_array is not a String like apparently intended, will need too look at where a problem and its attributes are defined.
             */
             if(cur_problem.answer == output_array) {
                 console.log("VALID")
