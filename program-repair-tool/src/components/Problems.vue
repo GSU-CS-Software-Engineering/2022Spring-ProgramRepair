@@ -10,9 +10,16 @@ The is-multiline class will cause a new row to be started automatically when the
 The is-centered class will make it so that columns will be horizontally centered.
 For example, if there are an odd number of problems, the last problem card, having its own row, will be aligned to the center and not the left.
 For more information, see: https://bulma.io/documentation/columns/options/
+Before any columns themselves are listed, the middleware component is placed.
+It will not be visible to the user, but it will call this component's gotProblems method and provide it with the data obtained from a gotProblems event when one is emitted.
+It will also call this component's errorEvent method when one is emitted.
 -->
 <template>
     <div class="problems columns is-vcentered is-multiline is-centered">
+        <middleware 
+        @gotProblems = "gotProblems" @errorEvent = "errorEvent"
+        />
+
             <!--
             Again, not fully certain of semantics about the key, but that may not be a problem.
             A div is created for every problem in the problems list.
@@ -39,9 +46,11 @@ For more information, see: https://bulma.io/documentation/columns/options/
     </div>
 </template>
 
-<script>  
+<script>
 
-import fetchProblems from "../utils/middleware.js";
+//The Middleware component used in the template above is imported here.
+
+import Middleware from "../utils/Middleware.vue";
 
 export default {
     /*
@@ -49,6 +58,13 @@ export default {
     The problem prop has the four fields of each problem.
     */
     name: 'Problems',
+
+    //The Middleware component is registered here so that it can be used in the template.
+
+    components: {
+        Middleware,
+    },
+
     props: {
         problem: {
             name: String,
@@ -58,16 +74,17 @@ export default {
         }
     },
     /*
-    The computed value is the list of problems, which is either converted from JSON into a JavaScript Object or an empty array if no item named problems exists in localStorage.
-    I'm uncertain of the semantics behind the get: word, but it seems to work as expected, by setting the value of problems to what the function returns.
+    Below is the attribute of this component, problems.
+    By default it is set to an empty array, this can be changed later.
+    If the application is working properly then the value of problems will be replaced with the problems obtained from the server.
     */
-    computed: {
-        problems: {
-            get: function() {
-                console.log(fetchProblems());
-            },
+    data() {
+
+        return {
+            problems: []
         }
-    },
+
+    }, 
     methods: {
         /*
         This method prints the problems to the console.
@@ -109,10 +126,21 @@ export default {
                 localStorage.removeItem('problems');
                 localStorage.setItem('problems', JSON.stringify(this.problems))
             }
-        }
-    }
+        },
+
+        /*
+        Below is the method that will be called when there is a gotProblems event.
+        It sets this component's problems attribute to the problems obtained from the server.
+        */
+
+        gotProblems(problemlist) {
+            console.log('In gotProblems.');
+            this.problems = problemlist;
+        },
+
+    },
     
-}
+};
 </script>
 
 <!--
