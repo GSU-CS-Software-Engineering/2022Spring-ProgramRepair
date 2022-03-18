@@ -10,7 +10,17 @@ The template has a div with style class main that holds all of the contents of t
 -->
 
 <template>
-    <div class="main">
+
+    <div>
+        <div>
+        <h1 class="title has-text-left p-2">{{ problem.name }}</h1>
+        <h2 class="subtitle has-text-left p-2">{{ problem.prompt }}</h2>
+        </div>
+        <hr />
+        <div class="main">
+        <div>
+            <inventory v-bind:problem="problem" />
+        </div>
         <div>
             <!--
                 Below is a drag-input component, which was obtained from DragInput.vue
@@ -29,6 +39,7 @@ The template has a div with style class main that holds all of the contents of t
 
             <code-output v-bind:output="output.data"/>
         </div>
+        </div>
     </div>
 </template>
 
@@ -37,6 +48,7 @@ The template has a div with style class main that holds all of the contents of t
 
 import CodeOutput from './CodeOutput.vue'
 import DragInput from './DragInput.vue'
+import Inventory from './Inventory.vue'
 
 /*
 The following is exported in order to expose the contained items to the template as well as to make this Main.vue component importable.
@@ -48,7 +60,8 @@ export default {
     */
     components: {
         CodeOutput,
-        DragInput
+        DragInput,
+        Inventory
     },
     data() {
 
@@ -84,6 +97,7 @@ export default {
             */
             if (cur_problem !== null) {
                 return {
+                    name: cur_problem.name,
                     //The prompt is set to equal that of the current problem.
                     prompt: cur_problem.prompt, // String
                     //The code is that of the current problem, except shuffled by a method defined below.
@@ -158,7 +172,7 @@ The main CSS class is defined with certain settings.
 
 <style scoped>
 .main {
-    margin-inline: 15%;
+    margin-inline: 0%;
     display: flex;
 }
 </style>

@@ -8,6 +8,7 @@ The tag <problems/> tells Vue to insert the component named "problems" in this l
     <div class="home-container">
         <h1 class="title has-text-left p-2">Welcome to the Program Repair tool!</h1>
         <h2 class="subtitle has-text-left p-2">Please click on a problem below to be taken to a page where you can attempt to solve it.</h2>
+        <hr />
         <problems/>
         
     </div>

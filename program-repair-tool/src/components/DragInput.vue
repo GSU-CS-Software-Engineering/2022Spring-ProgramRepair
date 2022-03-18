@@ -8,10 +8,6 @@ Below is the template for this component.
     -->
     <div class="drag-input" :output="output">
         <!--
-        The problem's prompt is displayed in this header.
-        -->
-        <h3 class="header">Prompt: {{ problem.prompt }}</h3>
-        <!--
         This div holds the part of the screen where code blocks can be dragged around.
         -->
         <div class="container">

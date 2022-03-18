@@ -46,7 +46,7 @@ Not sure why the removed the margin setting, may experiment with that.
 n: margin is set to auto in CreateProblems; should it be the same everywhere?
 -->
 
-<style scoped>
+<style>
     ul {
         list-style-type: none;
         /* margin: 10px; */
@@ -54,7 +54,7 @@ n: margin is set to auto in CreateProblems; should it be the same everywhere?
         overflow: auto;
     }
     .code-output {
-        padding-inline: 20px;
+        padding-inline: 0px;
         text-align: left;
     }
     .header {
@@ -62,7 +62,7 @@ n: margin is set to auto in CreateProblems; should it be the same everywhere?
     }
     .output {
         background-color: rgb(231, 231, 231);
-        width: 500px;
+        width: 450px;
         height: 300px;
     }
 </style>
