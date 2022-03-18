@@ -75,7 +75,7 @@ export default {
 </script>
 
 <!--
-Below is the styling for this component, and again the scoped boolean is deprecated and should not be used.
+Below is the styling for this component.
 -->
 
 <style scoped>

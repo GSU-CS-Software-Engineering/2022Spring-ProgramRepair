@@ -1,8 +1,12 @@
 <template>
     <!--
-    The div that contains all of this component's template has the class drag-input, I am not sure where this is defined right now, if it's defined anywhere.
+    This is the component for the block inventory section.
+    Right now it is mostly a copy of the workspace section component, which is DragInput.vue.
+    When compared to the workspace section, this one lacks the "Run" and "Clear Console" buttons as well as the associated methods.
+    This will be changed later.
     -->
     <div class="drag-input">
+        <h3 class="header">Inventory:</h3>
         <!--
         This div holds the part of the screen where code blocks can be dragged around.
         -->
@@ -53,11 +57,10 @@ export default {
 </script>
 
 <!--
-Once again, the scoped boolean is deprecated and should not be used.
-Some styling is done on buttons, and several CSS classes are defined and they are used in the above code.
+Several CSS classes are defined and they are used in the above code.
 -->
 
-<style>
+<style scoped>
     .container {
     width: 500px;
     display: flex;
@@ -83,7 +86,7 @@ Some styling is done on buttons, and several CSS classes are defined and they ar
     }
     .header {
         padding-inline: 20px;
-        padding-left: 10px;
+        padding-left: 30px;
         text-align: left;
         
     }

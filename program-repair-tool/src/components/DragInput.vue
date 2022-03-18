@@ -7,6 +7,7 @@ Below is the template for this component.
     The div that contains all of this component's template has the class drag-input, I am not sure where this is defined right now, if it's defined anywhere.
     -->
     <div class="drag-input" :output="output">
+        <h3 class="header">Workspace:</h3>
         <!--
         This div holds the part of the screen where code blocks can be dragged around.
         -->
@@ -43,6 +44,7 @@ Below is the template for this component.
         </div>
     </div>
 </template>
+
 <script>
 import Draggable from 'vue3-draggable'
 /*
@@ -130,7 +132,6 @@ export default {
 </script>
 
 <!--
-Once again, the scoped boolean is deprecated and should not be used.
 Some styling is done on buttons, and several CSS classes are defined and they are used in the above code.
 -->
 
@@ -164,7 +165,7 @@ Some styling is done on buttons, and several CSS classes are defined and they ar
     }
     .header {
         padding-inline: 20px;
-        padding-left: 10px;
+        padding-left: 30px;
         text-align: left;
         
     }

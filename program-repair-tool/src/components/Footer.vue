@@ -28,7 +28,6 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <!--
 Below is the component's style.
-The scoped boolean is deprecated and should not be used.
 -->
 <style scoped>
 h1 {

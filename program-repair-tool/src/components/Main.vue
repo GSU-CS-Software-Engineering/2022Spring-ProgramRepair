@@ -6,22 +6,48 @@ Right now these are detailed on lines 90, 101, and 103.
 <!--
 This is the template for the main component.
 This component is shown when the user goes to the page for solving a specific problem.
-The template has a div with style class main that holds all of the contents of the template.
+The template has a div that holds all of the HTML content.
 -->
 
 <template>
 
     <div>
+        <!--
+            The div below displays the current problem's name and prompt, and Bulma CSS classes are used for styling.
+            This div is followed by an hr tag, which stands for horizontal rule, which shows up as a horizontal line across the screen.
+        -->
         <div>
         <h1 class="title has-text-left p-2">{{ problem.name }}</h1>
         <h2 class="subtitle has-text-left p-2">{{ problem.prompt }}</h2>
         </div>
         <hr />
-        <div class="main">
-        <div>
+        <!--
+            The paragraph below displays general instructions to the user, and it also uses some Bulma CSS classes.
+            In the future we may want to make this a tooltip for aesthetic purposes, but that is low priority.
+        -->
+        <p class="has-text-left p-2">
+            General Instructions:
+            <br />
+            Drag the available blocks from the inventory section into the workspace section to construct your code.
+            <br />
+            Blocks can be dragged around within the workspace section or outside of it to place them back into the inventory section.
+            <br />
+            When you are done constructing your solution, click the Run button to check your answer.
+        </p>
+        <hr />
+        <!--
+            Similar to what is done in Problems.vue, a div holding the different sections is set to contain Bulma CSS columns.
+            Each section is then contained in its own individual div that is a column that will take up one third of the screen's width.
+        -->
+        <div class="main columns is-multiline is-centered">
+        <div class="column is-one-third">
+                    <!--
+                        Below is the inventory component, which was obtained from Inventory.vue.
+                        It is currently identical to the drag-input component except it lacks run and clear console buttons.
+                    -->
             <inventory v-bind:problem="problem" />
         </div>
-        <div>
+        <div class="column is-one-third">
             <!--
                 Below is a drag-input component, which was obtained from DragInput.vue
                 The code v-bind:problem="problem" sets the drag-input attribute called problem to always equal what problem value is computed by the JavaScript below.
@@ -31,7 +57,7 @@ The template has a div with style class main that holds all of the contents of t
             <drag-input v-bind:problem="problem"
              @updateOutput="updateOutput" @clearConsole="clearConsole"/>
         </div>
-        <div> 
+        <div class="column is-one-third"> 
             <!--
                 Below is a code-output component, which was obtained from CodeOutput.vue
                 The code v-bind:output="output.data" sets the code-output attribute called output to always equal what this component's output attribute's data is as it is computed by the JavaScript below.
@@ -110,7 +136,7 @@ export default {
                 }
             }
             else {
-                //If the current problem is null, the values are set to what is below.
+                //If the current problem is null, the values are set to what is below. This most likely needs to be altered.
                 return {
                     prompt: "No problems loaded",
                     //I am unsure why each object in the code array has a title attribute, this may simply be what is displayed by the code block with this attribute. Will discover later.
@@ -165,8 +191,7 @@ export default {
 
 <!--
 This is the style that the component uses.
-The scoped boolean is deprecated and should not be used, according to: https://www.w3schools.com/tags/att_scoped.asp#:~:text=The%20scoped%20attribute%20is%20a,Do%20not%20use%20it.
-Will most likely remove it later.
+The scoped boolean means that these style classes are not shared among other components.
 The main CSS class is defined with certain settings.
 -->
 

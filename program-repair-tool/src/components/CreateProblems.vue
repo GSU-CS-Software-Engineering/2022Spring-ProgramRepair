@@ -134,7 +134,7 @@ export default {
 </script>
 
 <!--
-Below is the styling, and once again the scoped boolean is deprecated and should not be used.
+Below is the styling.
 -->
 <style scoped>
     .create-problems {
