@@ -53,15 +53,15 @@ n: margin is set to auto in CreateProblems; should it be the same everywhere?
         overflow: auto;
     }
     .code-output {
-        padding-inline: 0px;
+        padding-inline: 20px;
         text-align: left;
     }
     .header {
-        padding-left: 10px;
+        padding-left: 0px;
     }
     .output {
         background-color: rgb(231, 231, 231);
-        width: 450px;
+        width: 430px;
         height: 300px;
     }
 </style>

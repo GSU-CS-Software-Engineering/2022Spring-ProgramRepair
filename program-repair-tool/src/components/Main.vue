@@ -114,7 +114,9 @@ export default {
             It is converted from JSON to a JavaScript object via JSON.parse()
             */
             let cur_problem=JSON.parse(window.localStorage.getItem('cur-problem'));
-            console.log('Current problem: ', cur_problem);
+
+            //For now this is all that is being done with the problem's blocks attribute, it is being logged to the console to confirm that it arrives correctly, which it does.
+            console.log('Current problem blocks: ', cur_problem.blocks);
             /*
                 != means unequal values
                 !== means unequal values or unequal types
@@ -138,6 +140,9 @@ export default {
             else {
                 //If the current problem is null, the values are set to what is below. This most likely needs to be altered.
                 return {
+
+                    name: "No problem",
+
                     prompt: "No problems loaded",
                     //I am unsure why each object in the code array has a title attribute, this may simply be what is displayed by the code block with this attribute. Will discover later.
                     code: [{title: `System.out.print("Hello World");`},],

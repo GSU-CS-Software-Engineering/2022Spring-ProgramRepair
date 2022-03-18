@@ -17,7 +17,7 @@ It will also call this component's errorEvent method when one is emitted.
 <template>
     <div class="problems columns is-vcentered is-multiline is-centered">
         <middleware 
-        @gotProblems = "gotProblems" @errorEvent = "errorEvent"
+        @gotProblems = "gotProblems"
         />
 
             <!--
@@ -70,6 +70,7 @@ export default {
             name: String,
             prompt: String,
             code: Array,
+            blocks: Array,
             answer: String,
         }
     },
