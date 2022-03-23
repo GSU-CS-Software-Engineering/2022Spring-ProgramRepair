@@ -41,6 +41,7 @@ Below is the template for this component.
         <div>
             <button class="button" @click="run">Run</button>
             <button class="button" @click="clearConsole">Clear Console</button>
+            <button class="button" @click="returnHome">Home</button>
         </div>
     </div>
 </template>
@@ -127,8 +128,27 @@ export default {
         clearConsole() {
             this.$emit("clearConsole")
         },
+        returnHome() { //Alert message when user uses 'Home' button
+            if (window.confirm("Are you sure you want to return home?\nProgress may be lost if not saved")) {
+                //window.onbeforeunload = null
+                window.location.replace('http://localhost:8080');
+            }
+        }
     }
 };
+/*To ensure user doesn't close Tab or Window (Impacts all changes within the website, fixable by using window.onbeforeunload = null (example in returnHome) but unsure if needed)
+    window.onbeforeunload = function (e) {
+        e = e || window.event;
+
+        // For IE and Firefox prior to version 4
+        if (e) {
+         e.returnValue = 'Any string';
+        }
+
+        // For Safari
+        return 'Any string';
+    };
+*/
 </script>
 
 <!--
