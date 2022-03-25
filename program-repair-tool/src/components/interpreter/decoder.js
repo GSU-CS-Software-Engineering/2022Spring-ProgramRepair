@@ -252,96 +252,15 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 conditions = line.split("(")[1].split(")")[0].split(";")
                 // Beginning and end of lines being executed by the for loop
 
-                /*
-                block_start will contain the line number where this for loop starts.
-                block_end will contain the line number where this for loop ends.
-                The first line is line 0, in this case.
-                scope_stack will be used to keep track of what level of nesting there is, in the event that there are nested loops.
-                new_blocks_list will eventually contain the statements executed within the for loop.
-                */
-                block_start = 0;
-                block_end = 0;
-                scope_stack = [];
-                new_blocks_list = [];
-                // Support for nested loops
-                /*
-                This loop iterates over all values of kw_vals.
-                Its function is to find a for loop and determine its beginning and ending lines.
-                Its current implementation is dubious, as it begins from the start of kw_vals when it should start at the current line, wasting time.
-                It is also dubious because only the first for loop will be recognized this way, causing errors.
-                */
-                for (let j in kw_vals) {
-                    
-                    //If the current element includes the word "for" and the scope_stack is empty, push an opening curly bracket to the scope_stack and set block_start to the current line number, then move on to the next element of kw_vals.
-
-                    if (kw_vals[j].includes("for") && scope_stack.length == 0) {
-                        scope_stack.push("{")
-                        block_start = parseInt(j)
-                        continue
-                    }
-
-                    //Otherwise, if the scope_stack is not empty, the following is done.
-
-                    else if(scope_stack.length > 0) {
-                        /*
-                        This loop should iterate over every word in the current line of kw_vals.
-                        It does not appear to actually do this, as line only contains information for the line where the intial for was encountered.
-                        */
-                        for (let k in line) {
-                            console.log(kw_vals[j][k])
-                            /*
-                            If the word is a closing curly bracket, pop an element from scope_stack.
-                            If the scope_stack is now empty, block_end will be set to the number of this line and the loop will stop executing.
-                            */
-                            if (kw_vals[j][k] == "}") {
-                                scope_stack.pop()
-                                if (scope_stack.length == 0) {
-                                    block_end = parseInt(j)
-                                    break;
-                                }
-                            }
-                            //Otherwise, if the word is an opening curly bracket, push an opening curly bracket to the scope_stack.
-                            else if (kw_vals[j][k] == "{"){
-                                scope_stack.push("{")
-                            }
-                        }
-                    }
-
-                    //If the block_end has been found, terminate execution of this loop.
-
-                    if (block_end > 0) {
-                        break;
-                    }
-                }
-
-                /*
-                If the scope_stack is not empty or the block_end has not been found, or it was found at line 0, either could be implied by it being 0, an error message is displayed.
-                Actually, it seems impossible for block_end to be found at line 0.
-                Should perhaps terminate execution of the function in this case, or do something else instead of just displaying an error message.
-                */
-
-                if (scope_stack.length > 0 || block_end < 1) {
-                    console.log("ERROR -> decode -> for -> scope stack")
-
-                }
-
-                // Removes for loop instructions from being added to the main instruction list
-                /*
-                The block's length is calculated as the ending line minus the starting line.
-                I am uncertain what is counted as being part of the block.
-                If it's all statements that are executed as a part of the for loop, this calculation is incorrect.
-                If it's all statements that are executed as a part of the for loop as well as the foor loop declaration itself, this calculation is correct.
-                It seems to be the latter.
-                */
-                block_len = block_end - block_start
+                let scope = get_stack_scope(kw_vals, "for")
 
                 /*
                 new_blocks_list will become an array consisting of the lines involved in the for loop.
                 This object's blocks_list will be modified to contain the lines that are not part of the for loop.
                 kw_vals will now hold elements that are not part of the for loop.
                 */
-                new_blocks_list = blocks_list.splice(block_start, block_len + 1)
-                kw_vals.splice(block_start, block_len + 1)
+                new_blocks_list = blocks_list.splice(scope.start, scope.len + 1)
+                kw_vals.splice(scope.start, scope.len + 1)
 
                 // Need to stay on the same index for the next iteration
                 //As the old comment says, now that lines have been removed from kw_vals, the current index is actually the next line to be read, so it needs to be decremented so it will not be skipped.
@@ -362,12 +281,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 This instruction's conditions is set to the conditions array.
                 */
                 
-                
-                instruction = {
-                    func: "for",
-                    blocks_list: new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0],
-                    conditions: conditions
-                }
+                instruction = buildForInstruction(new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0], conditions)
 
                 break;
 
@@ -385,92 +299,10 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 //As the old comment says, conditions will hold the text retrieved from in between the parentheses.
                 conditions = line.split("(")[1].split(")")[0]
 
-                // Beginning and end of lines being executed by the for loop
-                /*
-                Assuming that this will be similar to for loop decoding-
-                block_start will be the line number where the if block starts.
-                block_end will be the line number where the if block ends.
-                The first line will be line 0, in this case.
-                scope_stack will be used to keep track of the nesting of if statements.
-                new_blocks_list will eventually contain the statements withtin the if block.
-                The if block refers to all lines included in an if statement, but does not include any else-if or else statemets.
-                */
-                block_start = 0
-                block_end = 0
-                scope_stack = [];
-                new_blocks_list = [];
+                let scopeStats = get_stack_scope(kw_vals, "if")
 
-                /*
-                This loop is tasked with finding the if block beginning and end.
-                It iterates over ever element of kw_vals.
-                It seems to suffer from the same problem as the loop that does the same thing for for-loop decoding.
-                It starts at the beginning a kw_vals which is inefficient.
-                It always stops after the first if block, making any subsequent ones unreachable.
-                */
-                for (let j in kw_vals) {
-
-                    //If the current element includes the word "if" and the scope_stack is empty, push an opening curly bracket to the scope_stack and set block_start to the current line number, then continue to the next iteration of the loop.
-
-                    if (kw_vals[j].includes("if") && scope_stack.length == 0) {
-                        scope_stack.push("{")
-                        block_start = parseInt(j)
-                        continue
-                    }
-
-                    //Otherwise, if the scope_stack is not empty, do the following.
-
-                    else if(scope_stack.length > 0) {
-                        /*
-                        This loop iterates over every element in line.
-                        Once again, I believe this is a mistake and that it should iterate over every element in the current line, not the line variable.
-                        The line variable seems to only contain information regarding where the initial "if" was encountered.
-                        */
-                        for (let k in line) {
-                            /*
-                            If the current element is a closing curly bracket, pop an element from scope_stack.
-                            If scope_stack is now empty, block_end will be set to the line number of this line and the execution of this loop will be terminated.
-                            */
-                            if (kw_vals[j][k] == "}") {    // } need their own line
-                                scope_stack.pop()
-                                if (scope_stack.length == 0) {
-                                    block_end = parseInt(j)
-                                    break;
-                                }
-                            }
-                            //Otherwise, if the current element is an opening curly bracket, push a curly bracket to scope_stack.
-                            else if (kw_vals[j][k]=="{"){
-                                scope_stack.push("{")
-                            }
-                        }
-                    }
-
-                    //If the block_end has been found, terminate execution of this loop.
-
-                    if (block_end > 0) {
-                        break;
-                    }
-                }
-
-                /*
-                If the scope_stack is not empty or block_end has not been found, display an error message on the console.
-                Again, we may want to terminate execution of the entire function if this happens, or do something else other than just displaying a message.
-                */
-
-                if (scope_stack.length > 0 || block_end < 1) {
-                    console.log("ERROR -> decode -> if -> scope stack")
-
-                }
-
-                // Removes if instructions from being added to the main instruction list
-                /*
-                The block_len is calculated the same way it was with the for blocks.
-                blocks_list becomes a version of itself without the lines of the if statement.
-                new_blocks_list is the lines of the if statment.
-                kw_vals becomes a version of itself without the entries of the if statement.
-                */
-                block_len = block_end - block_start
-                new_blocks_list = blocks_list.splice(block_start, block_len + 1)
-                kw_vals.splice(block_start, block_len + 1)
+                new_blocks_list = blocks_list.splice(scopeStats.start, scopeStats.len + 1)
+                kw_vals.splice(scopeStats.start, scopeStats.len + 1)
                 
                 // Getting rid of if statement and the closing bracket
                 //Like the old comment says, the two statments below will eliminate the first and last elements of new_blocks_list, leaving only the statements inside the if block.
@@ -485,12 +317,8 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 We should keep an eye on this, I am uncertain if there could be some inconsistencies.
                 This instruction's conditions is set to the conditions array.
                 */
-                    
-                instruction = {
-                    func: "if",
-                    blocks_list: new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0],
-                    conditions: conditions
-                }
+                instruction = buildIfInstruction(new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0], conditions)
+
                 // Storing (else if())'s following a standard if statement
                 //error:unexpected lexical decalration in case block (no-case-declaraton) 294-295
                 /*
@@ -540,11 +368,8 @@ export default function decode(registers, blocks_list, instructions, output) {  
                         We should keep an eye on this, I am uncertain if there could be some inconsistencies.
                         else_if_instruction's conditions is set to the conditions array.
                         */
-                        let else_if_instruction = {
-                            func: "if",
-                            blocks_list: new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0],
-                            conditions: conditions
-                        }
+                        let else_if_instruction = buildIfInstruction(new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0], conditions)
+
                         //Add the else_if_instruction to the else_container.
                         else_container.push(else_if_instruction)
                         /*
@@ -577,10 +402,8 @@ export default function decode(registers, blocks_list, instructions, output) {  
                         This could be assuming that new_blocks_list cannot be empty, which is indeed possible if the student makes a mistake.
                         We should keep an eye on this, I am uncertain if there could be some inconsistencies.
                         */
-                        let else_instruction = {
-                            func: "else",
-                            blocks_list: new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0],
-                        }
+                        let else_instruction = buildElseInstruction(new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0])
+
                         //Add else_instruction to else_container
                         else_container.push(else_instruction)
                         /*
@@ -619,10 +442,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 instruction's func is set to "print".
                 Its value is set to be print_container.
                 */
-                instruction = {
-                    func: "print",       // func should represent the function given in the instruction
-                    value: print_container
-                }
+                instruction = buildPrintInstruction(print_container)
                 break;
 
             /*
@@ -676,14 +496,14 @@ function get_stack_scope(kw_vals, keyword) {
             }
         }
         if (block_end > 0) {
-            return {
-                    start: block_start,
-                    end: block_end,
-                    len: block_end - block_start
-                
-            };
+            break
         }
     }
+
+    if (scope_stack.length > 0 || block_end < 1) {
+        console.log("ERROR -> decode -> for -> scope stack")
+    }
+
     return {
         start: block_start,
         end: block_end,
@@ -692,7 +512,7 @@ function get_stack_scope(kw_vals, keyword) {
 }
 
 function clipSemicolon(word) {
-    word.includes(';') ? word.slice(0,-1) : word
+    word = word.includes(';') ? word.slice(0,-1) : word
     return word
 }
 
@@ -706,11 +526,45 @@ function buildLWInstruction(var1, value) {
 }
 
 function buildMathInstruction(func, reg_val, var1, var2) {
-    instruction = {
+    let instruction = {
         func: func,
         reg_val: reg_val,
         var1: var1,
         var2: var2
+    };
+    return instruction;
+}
+
+function buildForInstruction(blocks_list, conditions) {
+    let instruction = {
+        func: "for",
+        blocks_list: blocks_list,
+        conditions: conditions
+    };
+    return instruction;
+}
+
+function buildIfInstruction(blocks_list, conditions) {
+    let instruction = {
+        func: "if",
+        blocks_list: blocks_list,
+        conditions: conditions
+    };
+    return instruction;
+}
+
+function buildElseInstruction(blocks_list) {
+    let instruction = {
+        func: "else",
+        blocks_list: blocks_list
+    };
+    return instruction;
+}
+
+function buildPrintInstruction(print_container) {
+    let instruction = {
+        func: "print",
+        value: print_container
     };
     return instruction;
 }
