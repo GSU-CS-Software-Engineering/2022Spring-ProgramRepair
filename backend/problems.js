@@ -28,6 +28,9 @@ class Problems {
            { name: 'Say Hello', prompt: 'Please print "Hello World" to the console.', code: ['System.out.println("Hello World");'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hello World' },
            { name: 'Count to Three', prompt: 'Please print the numbers 1-3 line-by-line using a for loop.', code: ['for (int i = 1; i <= 3; i++) {', 'System.out.println(i);', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }, { block: this.blocks[1], quantity: 1 }, { block: this.blocks[2], quantity: 1 }], answer: '1,2,3'},
            { name: 'Say Goodbye', prompt: 'Please print "Goodbye World" to the console.', code: ['System.out.println("Goodbye World");'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Goodbye World' },
+           { name: 'If Statement 1', prompt: 'Complete the if statement, please.', code: ['int i = 4;', 'if (i < 4) {', 'System.out.println("Less than four!");', '}', 'else if (i == 4) {', 'System.out.println("Equal to four!");', '}', 'else {', 'System.out.println("Greater than four!");', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Equal to four!' },
+           { name: 'If Statement 2', prompt: 'Complete the if statement, please.', code: ['int i = 3;', 'if (i < 4) {', 'System.out.println("Less than four!");', '}', 'else if (i == 4) {', 'System.out.println("Equal to four!");', '}', 'else {', 'System.out.println("Greater than four!");', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Less than four!' },
+           { name: 'If Statement 3', prompt: 'Complete the if statement, please.', code: ['int i = 5;', 'if (i < 4) {', 'System.out.println("Less than four!");', '}', 'else if (i == 4) {', 'System.out.println("Equal to four!");', '}', 'else {', 'System.out.println("Greater than four!");', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Greater than four!' },
         ];
     }
 
