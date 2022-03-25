@@ -178,7 +178,7 @@ export default function execute(instruction, registers, output) {
             value: loop_variable[loop_variable.indexOf("=")+1]
         }
         //This line executes the instruction, therefore setting the value to the variable in registers.
-        for_interpreter.execute(instruction, registers, output) // Loading looping variable to a register
+        for_interpreter.execute(instruction) // Loading looping variable to a register
 
         // Determine when to branch and what comparison to make
         /*

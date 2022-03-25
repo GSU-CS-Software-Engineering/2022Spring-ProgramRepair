@@ -92,7 +92,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     Instead the includes method should be used for this.
                     See here: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/includes
                     */
-                    line[1] = line[1].indexOf(";") > 0 ? line[1].slice(0,-1) : line[1]
+                    line[1] = clipSemicolon(line[1])
 
                     /*
                     The instruction object is populated with attributes and values.
@@ -104,12 +104,9 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     Also uncertain why a semicolon is sought and eliminated if it exists from the second element in the line when this was already done previously.
                     That is also done very frequently, should maybe do some code reuse.
                     */
-                        instruction = {
-                        func: "lw",       // func should represent the function given in the instruction
-                        var1: line[1],  // variable name being stored to register
-                        value: line[1].indexOf(";") > 0 ? line[1].slice(0,-1) : line[1]    // value being stored to register
-                
-                    }
+
+                    instruction = buildLWInstruction(line[1], line[1])
+     
                 }
                 // For initializing a variable e.g. (int a = 5;)
                 /* 
@@ -127,7 +124,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     The variable value is set to val with its semicolon eliminated if it has one, or just val if it does not.
                     Uncertain why the variable val was not reused here.
                     */
-                    var value = val.indexOf(";") > 0 ? val.slice(0,-1) : val
+                    var value = clipSemicolon(val)
                     /*
                     Once again the instruction is given the func value "lw", which is a bit of a misnomer, actually.
                     (Well, maybe not. I am a bit sleep deprived and what's important is how it works.)
@@ -135,12 +132,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     Uncertain why this isn't just done with line[1].
                     The instruction's value will be set to the value attribute's value if that is a number, or, if the value attribute's value is the name of a variable in registers, then that variable's value is saved as the instruction's value instead.
                     */
-                    instruction = {
-                        func: "lw",       // func should represent the function given in the instruction
-                        var1: line[(line.indexOf("=")-1)],  // variable name being stored to register
-                        value: (Object.prototype.hasOwnProperty.call(registers, value)) ? registers[value] : value          // value being stored to register
-                    
-                    }
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], substituteVariable(registers, value))
                     
                 }
                 // For initializing a variable with the output of an expression e.g. (int a = 2 + 3; int a = b + c..)
@@ -155,15 +147,11 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     The instruction's var1 will be the variable name, though I am uncertain why it isn't just selected with line[1].
                     The value of the instruction will be the expression. Will check on how this is used later.
                     */
-                    let expression = line
-                        .splice(3,line.length-3)
-                        .map(x => { return x.indexOf(";") > 0 ? x.slice(0,-1) : x });
+                    let expression = line.splice(3,line.length-3);
+                    expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
 
-                    instruction = {
-                        func: "lw",       // func should represent the function given in the instruction
-                        var1: line[(line.indexOf("=")-1)],  // variable name being stored to register
-                        value: expression
-                    }
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression)
+
                 }
                 break;
 
@@ -185,40 +173,9 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 The instruction's value is set to be the expression.
                 */
                 if (line.length > 3) {
-                    let expression = line
-                        .splice(2,line.length-2)
-                        .map(x => { return x.indexOf(";") > 0 ? x.slice(0,-1) : x });
-                    instruction = {
-                        func: "lw",       // func should represent the function given in the instruction
-                        var1: line[(line.indexOf("=")-1)],  // variable name being stored to register
-                        value: expression          // expression getting calculated, then being stored to register      
-                    }
-                }
-                /*
-                Otherwise, the following is done if the line contains a word "+", that is not at the beginning of the line.
-                The indexOfOperator variable is set to the index of "+".
-                If neither addend is numeric, the instruction's func is set to "add".
-                The "add" instruction only supports adding variables.
-                Otherwise, it's set to "addi".
-                The "addi" instruction can add variables as well as numbers.
-                Uncertain why "add" even exists then.
-                The instruction's reg_val will become the variable name.
-                The instruction's var1 and var2 will become the addends, with any semicolons removed from the second addend.
-                At least, that seems to be the intention. There is an error, as var2 will actually be set to the operator if the second addend does not contain a semicolon.
-                This piece of code is a little questionable, as no valid Java code is three words or less and has a "+" as one of those words.
-                This piece of code also assumes that this line is three words long, which may be benign but should still be kept in mind.
-                Will update this comment if I find anything that justifies this.
-                I have not.
-                */
-                else if (line.indexOf("+") > 0) { // check if we need to use add or addi function
-                    indexOfOperator = line.indexOf("+")
-                    instruction = {
-                        func: (!isNumeric(line[indexOfOperator-1]) &&
-                                !isNumeric(line[indexOfOperator+1]))? "add": "addi",
-                        reg_val: line[0],   // register that will be added to
-                        var1: line[indexOfOperator-1],  // operand 1
-                        var2: line[indexOfOperator+1].indexOf(";") > 0 ? line[indexOfOperator+1].slice(0,-1) : line[indexOfOperator]       // operand 2
-                    }
+                    let expression = line.splice(2,line.length-2)
+                    expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression)
                 }
                 /*
                 Otherwise, if the line is three words long and has the word "+=" that is not at the beginning, the following is done.
@@ -227,27 +184,15 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 The instruction's var1 is also set to the variable name.
                 The instruction's var2 is set to what is being added to the variable, with any semicolons removed.
                 */
-                else if (line.indexOf("+=") > 0 && line.length == 3) {  // Only works if line length == 3; ( num += 2 ) and ( num += num )
-                    instruction = {
-                        func: "addi",
-                        reg_val: line[0],
-                        var1: line[0],
-                        var2: line[2].indexOf(";") > 0 ? line[2].slice(0,-1) : line[2]
-                    }
+                else if (line[1] == "+=" > 0 && line.length == 3) {  // Only works if line length == 3; ( num += 2 ) and ( num += num )
+                    instruction = buildMathInstruction("addi", line[0], line[0], clipSemicolon(line[2]))
                 }   
                 /*
                 Otherwise, if the line contains the word "-" that is not at the beginning, the following is done.
                 This is exactly the same as what begins on line 278, except it is concerned with subtraction and not addition.
                 */
-                else if (line.indexOf("-") > 0) {
-                    indexOfOperator = line.indexOf("-")
-                    instruction = {
-                        func: (!isNumeric(line[indexOfOperator-1]) && 
-                                !isNumeric(line[indexOfOperator+1]))? "sub": "subi",
-                        reg_val: line[0],   // register that will be hold substracted value
-                        var1: line[indexOfOperator-1],  // operand 1
-                        var2: line[indexOfOperator+1].indexOf(";") ? line[indexOfOperator+1].slice(0,-1) : line[indexOfOperator+1]       // operand 2
-                    }
+                else if (line[1] == "-=" && line.length == 3) {
+                    instruction = buildMathInstruction("subi", line[0], line[0], clipSemicolon(line[2]))
                 }
                 /*
                 Otherwise, if the line contains the word "*" that is not at the beginning, the following is done.
@@ -255,27 +200,15 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 One notable difference is that there is no check of the numericness of the operands, instead the instruction's func is just set to "mult".
                 Will discover the implications of this later.
                 */
-                else if (line.indexOf("*") > 0) {
-                    indexOfOperator = line.indexOf("*")
-                    instruction = {
-                        func: "mult",
-                        reg_val: line[0],
-                        var1: line[indexOfOperator-1],  // operand 1
-                        var2: line[indexOfOperator+1].indexOf(";") ? line[indexOfOperator+1].slice(0,-1) : line[indexOfOperator+1]       // operand 2
-                    }
+                else if (line[1] == "*=" && line.length == 3) {
+                    instruction = buildMathInstruction("mult", line[0], line[0], clipSemicolon(line[2]))
                 }
                 /*
                 Otherwise, if the line contains the word "/" that is not at the beginning, the following is done.
                 This is exactly the same as what begins on line 325, except it is concerned with division and not multiplication.
                 */
-                else if (line.indexOf("/") > 0) {
-                    indexOfOperator = line.indexOf("/")
-                    instruction = {
-                        func: "div",
-                        reg_val: line[0], 
-                        var1: line[indexOfOperator-1],  // operand 1
-                        var2: line[indexOfOperator+1].indexOf(";") ? line[indexOfOperator+1].slice(0,-1) : line[indexOfOperator+1]       // operand 2
-                    }
+                else if (line[1] == "/=" && line.length == 3) {
+                    instruction = buildMathInstruction("div", line[0], line[0], clipSemicolon(line[2]))
                 }          
                 /*
                 Otherwise, if the second word is "=" and the line is three words long, the following is done.
@@ -294,17 +227,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 Notably, semicolons do not seem to be removed here. Could be problematic.
                 */
                 else if (line[1] == "=" && line.length == 3) {  // Assigning a single value to a preexisting register (a = 5)
-
-                    instruction = {
-                        func: "addi",
-                        reg_val: line[0],   // Register name
-                        // Pretty much just analyzing the value being assigned,
-                        // whether its a preexisting variable or just a value
-                        var1: (Object.prototype.hasOwnProperty.call(registers, line[2])) ?
-                        (registers[line[2]] == line[2] ? 0 : registers[line[2]]) : line[2],         
-                        var2: 0                 // adding zero in order to set var1 as value
-                        
-                    }
+                    instruction = buildMathInstruction("addi", line[0], clipSemicolon(line[2]), 0)
                 }
                 /*
                 Otherwise there is presumed to be an error, and the line's contents are logged to the console with an error message.
@@ -766,4 +689,32 @@ function get_stack_scope(kw_vals, keyword) {
         end: block_end,
         len: block_end - block_start
     }
+}
+
+function clipSemicolon(word) {
+    word.includes(';') ? word.slice(0,-1) : word
+    return word
+}
+
+function buildLWInstruction(var1, value) {
+    let instruction = {
+        func: "lw",      
+        var1: var1,
+        value: value      
+    };
+    return instruction;
+}
+
+function buildMathInstruction(func, reg_val, var1, var2) {
+    instruction = {
+        func: func,
+        reg_val: reg_val,
+        var1: var1,
+        var2: var2
+    };
+    return instruction;
+}
+
+function substituteVariable(registers, value) {
+    return Object.prototype.hasOwnProperty.call(registers, value) ? registers[value] : value
 }
