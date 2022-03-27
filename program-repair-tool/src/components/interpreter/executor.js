@@ -1,5 +1,6 @@
 import * as mips from './mips_instructions.js'
 import Interpreter from './Interpreter.js';
+import { buildLWInstruction, substituteVariable } from './decoder.js';
 // Instructions execute after each instruction is decoded, so it reads and executes code from top to bottom.
 /*
 Like the previous comment says, this method is run after each instruction is decoded.
@@ -28,74 +29,9 @@ export default function execute(instruction, registers, output) {
         */
 
         else if (key.value.length > 2) {
-
-            // Extracting variable values if there are any
-            /*
-            The following line replaces any variables in the expressions with their values and saves it in the expression variable.
-            Once again this does not seem to check for the case where an unitialized variable is used.
-            Perhaps we ought to include that detection in the decode method.
-            */
-            let expression = key.value.map(x => Object.prototype.hasOwnProperty.call(registers, x) ? registers[x] : x);
-            // Computing mult/div then add/sub
-            /*
-            The following two loops complete the math expression.
-            The first loop performs any multiplication and division while the second loop performs any addition and subtraction, in accordance with the order of operations.
-            */
-            for (let i = 0; i < expression.length; i++) {
-                //x becomes the expression element being currently iterated over.
-                let x = expression[i]
-                /*
-                If the multiplication sign is seen, then multiplication is performed on the numbers on either side.
-                The product is rounded to the nearest integer. May want to change this later.
-                The result is then substituted into the expression, replacing where the operands and multiplication symbol were.
-                It should be noted that this way of evaluating expressions assumes that they are properly formatted, which may not be the case.
-                We may need to check for that.
-                This same process is done for division, addition, and subtraction.
-                Potential for code reuse.
-                */
-                if (x == "*") {
-                    let new_val = Math.round(mips.mult(expression[i-1], expression[i+1]))
-                    expression.splice(--i, 3, new_val)
-                }
-                else if (x == "/") {
-                    let new_val = Math.round(mips.div(expression[i-1], expression[i+1]))
-                    expression.splice(--i, 3, new_val)
-                    
-                    }
-            }
-            for (let i = 0; i < expression.length; i++) {
-                let x = expression[i]
-                if (x == "+") {
-                    let new_val = Math.round(mips.add(expression[i-1], expression[i+1]))
-                    expression.splice(--i, 3, new_val)
-                }
-                else if (x == "-") {
-                    let new_val = Math.round(mips.sub(expression[i-1], expression[i+1]))
-                    expression.splice(--i, 3, new_val)
-                    } 
-            }
-            /*
-            The final result, which should be all that is left in expression, is then saved to the appropriate variable.
-            Uncertain why the join method is needed here, perhaps the value stored in registers needs to be a String.
-            That's probably it.
-            */
-            registers[key.var1] = expression.join()
+            registers[key.var1] = evaluateExpression(key.value, registers)
         } 
 
-    }
-    /*
-    As the old comment states, this pice of code is intended for adding variables together.
-    While this piece of code is well written, its use is highly questionable considering where the "add" func is used in the decode method.
-    */
-    else if (key.func == "add") {   // Used for adding VARIABLES ONLY 
-        //reg_val is the name of the variable to save the result to.
-        let register_name = key.reg_val
-        let val1 = registers[key.var1]
-        let val2 = registers[key.var2]
-        //Once again, the result is rounded for some reason.
-        let new_val = Math.round(mips.add(val1, val2))
-        //The result is stored in the appropriate variable.
-        registers[register_name] = new_val
     }
     /*
     The old comment states that this code piece is used for addition related to integer values and variables.
@@ -103,50 +39,19 @@ export default function execute(instruction, registers, output) {
     A lot of this execution code appears redundant and in need of reworking.
     */
     else if (key.func == "addi") {  // Flexible addition for both integer vals and variable vals
-        let register_name = key.reg_val
-        // Next 2 lines checks which code entries are integers vs a preexisting register value (variable)
-        /*
-        I'm not even sure if the above comment is right but I doubt it.
-        Instead, if var1 or var2 is numeric, then val1 or val2 should just be set to that number.
-        Otherwise, val1 or val2 should be set to the value of the variable with var1 or var2's name.
-        In general, keen awareness should be maintained of what this program is currently capable of.
-        */
-        let val1 = !mips.isNumeric(registers[key.var1]) ? key.var1 : registers[key.var1]  
-        let val2 = !mips.isNumeric(registers[key.var2]) ? key.var2 : registers[key.var2] 
-        let new_val = Math.round(mips.add(val1, val2))
-        registers[register_name] = new_val
-    }
-    //The following is analogous to "add". Roughly the same comments apply.
-    else if (key.func == "sub") {   // Used for subtracting VARIABLES ONLY
-        let register_name = key.reg_val
-        let val1 = registers[key.var1]
-        let val2 = registers[key.var2] 
-        let new_val = Math.round(mips.sub(val1, val2))             
-        registers[register_name] = new_val
+        registers[key.reg_va] = performMathOp(registers, key.var1, key.var2, mips.add)
     }
     //The following is analogous to "addi". Roughly the same comments apply.
-    else if (key.func == "subi") {  // Flexible subtraction for both integer vals and variable vals
-        let register_name = key.reg_val
-        let val1 = !mips.isNumeric(registers[key.var1]) ? key.var1 : registers[key.var1]
-        let val2 = !mips.isNumeric(registers[key.var2]) ? key.var2 : registers[key.var2] 
-        let new_val = Math.round(mips.sub(val1, val2))                
-        registers[register_name] = new_val
+    else if (key.func == "subi") {  // Flexible subtraction for both integer vals and variable vals              
+        registers[key.reg_va] = performMathOp(registers, key.var1, key.var2, mips.sub)
     }
     //The following is analogous to "addi" and "subi". Roughly the same comments apply.
     else if (key.func == "mult") {  // Flexible multiplication
-        let register_name = key.reg_val
-        let val1 = !mips.isNumeric(registers[key.var1]) ? key.var1 : registers[key.var1]
-        let val2 = !mips.isNumeric(registers[key.var2]) ? key.var2 : registers[key.var2] 
-        let new_val = Math.round(mips.mult(val1, val2))           
-        registers[register_name] = new_val
+        registers[key.reg_va] = performMathOp(registers, key.var1, key.var2, mips.mult)
     }
     //The following is analogous to "addi", "subi", and "mult". Roughly the same comments apply.
     else if (key.func == "div") {   // Flexible divison
-        let register_name = key.reg_val
-        let val1 = !mips.isNumeric(registers[key.var1]) ? key.var1 : registers[key.var1]
-        let val2 = !mips.isNumeric(registers[key.var2]) ? key.var2 : registers[key.var2]
-        let new_val = Math.round(mips.div(val1, val2))               
-        registers[register_name] = new_val
+        registers[key.reg_va] = performMathOp(registers, key.var1, key.var2, mips.div)
     }
     //There is a desperate need for code reuse with the above code pieces.
 
@@ -172,58 +77,10 @@ export default function execute(instruction, registers, output) {
         The following creates an instruction where var1 is the variable name and value is what it should be set to, so i and 4 respectively in my previous example.
         It should be noted that this process does not account for a loop that starts like for (; i < 5; i++) {
         */
-        instruction = {
-            func: "lw",       // func should represent the function given in the instruction
-            var1: loop_variable[loop_variable.indexOf("=")-1],  // variable name being stored to register
-            value: loop_variable[loop_variable.indexOf("=")+1]
-        }
+        instruction = buildLWInstruction(loop_variable[loop_variable.indexOf("=")-1], loop_variable[loop_variable.indexOf("=")+1])
+
         //This line executes the instruction, therefore setting the value to the variable in registers.
         for_interpreter.execute(instruction) // Loading looping variable to a register
-
-        // Determine when to branch and what comparison to make
-        /*
-        The value returned by the function named branch is calculated via the function below.
-        branch will be a boolean value stating whether to continue to the next iteration or not.
-        */
-        let branch = () => {
-            /*
-            line becomes an array consisting of the words in the second part of the for loop.
-            Uncertain why trim() is needed to remove leading and trailing whitespace.
-            */
-            let line = key.conditions[1].trim().split(" ")
-            /*
-            If the first word is a variable (that registers has), register becomes its value.
-            Otherwise, which assumes it is something other than a variable, register is just set to that.
-            */
-            let register = (Object.prototype.hasOwnProperty.call(for_interpreter.registers, line[0])) ? for_interpreter.registers[line[0]] : line[0]  // variable assigned to register ('i' in most cases)
-            //operator is set to the second word, which indeed should be an operator.
-            let operator = line[1]  // Should be a comparison operator
-            //The same operation is done to assign comparator as was done to assign register, except it is done on the third word this time.
-            let comparator = (Object.prototype.hasOwnProperty.call(for_interpreter.registers, line[2])) ? for_interpreter.registers[line[2]] : line[2]// Operand 2
-            
-            /*
-            Different calculations are done depending on what the operator is.
-            I realize now that names for register and comparator are a bit misleading, they are really just operands.
-            If the default case is hit, which it should not be, a message is displayed to the console.
-            break statements may not be needed after each case, but perhaps they should be added to be safe.
-            */
-            switch(operator) {
-                case "<":
-                    return mips.blt(register, comparator)
-                case ">":
-                    return mips.bgt(register, comparator)
-                case "<=":
-                    return mips.blte(register, comparator)
-                case ">=":
-                    return mips.bgte(register, comparator)       
-                case "==":
-                    return mips.beq(register, comparator)
-                default:
-                    console.log("for loop operator default: " + operator)
-                    break;
-
-            }
-        }
         
         // Decode the incrementer portion of condition and save it as a function to run in the while loop
         //The following function, named incrementer, performs the logic present in the third part of conditions, so in an example of for (int i = 0; i < 10; i++), it would be i++.
@@ -233,110 +90,37 @@ export default function execute(instruction, registers, output) {
             This may or may not be enough for our purposes.
             */
             if (key.conditions[2].includes("++")) {
-                /*
-                line becomes the third element of conditions with all leading and trailing whitespace removed.
-                Also the "++" is removed, and line becomes a single-element array where the element is the remaining text.
-                Additionally, any empty elements are removed from the array, even though there should be none.
-                Uncertain why all this is needed, except for removing the "++", I understand that much.
-                */ 
-                let line = key.conditions[2]
-                    .trim()
-                    .split("++")
-                    .filter(x => {      // Making sure no empty elements are added to the instruction line
-                        return x.length > 0
-                    })
-                /*
-                If line is not one element, an error message is displayed to the console.
-                May want to do more than that in case this happens.
-                */
-                if (line.length != 1) {
-                    console.log("Error with incrementer in for loop")
-                }
-                /*
-                loop_var becomes the single element of line, the name of the variable being incremented.
-                I can't help but feel like this process could be simplified somehow.
-                */
-                var loop_var = line[0]
-                //The variable is incremented within registers, as is appropriate.
-                for_interpreter.registers[loop_var] = mips.add(for_interpreter.registers[loop_var], 1)
+                
+                changeByOne(key.conditions, for_interpreter.registers, mips.add)
+
             }
             /*
             The following is almost identical to the previous code piece except it's for decrementing.
             This prompts code reuse.
             */
             else if (key.conditions[2].includes("--")) {
-                let line = key.conditions[2]
-                    .trim()
-                    .split("--")
-                    .filter(x => {      // Making sure no empty elements are added to the instruction line
-                        return x.length > 0
-                    })
-                //This error message isn't as descriptive as I'd like, it says incrementer and not decrementer, but these are just semantics.
-                if (line.length != 1) {
-                    console.log("Error with incrementer in for loop")
-                }
-                //The let keyword is used here as opposed to the var keyword that was used in the previous codepiece, the difference may not be trivial, may want to look at this.
-                let loop_var = line[0]
-                for_interpreter.registers[loop_var] = mips.sub(for_interpreter.registers[loop_var], 1)
+                
+                changeByOne(key.conditions, for_interpreter.registers, mips.sub)
+
             }
             //If the third element of conditions includes "+=", the following is done.
             else if (key.conditions[2].includes("+=")) {
-                /*
-                Just like before, line becomes an array that contains the words of the third element of conditions, barring "+=".
-                This is a key opportunity for code reuse.
-                */
-                let line = key.conditions[2]
-                    .trim()
-                    .split("+=")
-                    .filter(x => {      // Making sure no empty elements are added to the instruction line
-                        return x.length > 0
-                    })
-                //There is an error if line is not two elements long, as it should contain the addends.
-                if (line.length != 2) {
-                    console.log("Error with incrementer in for loop")
-                }
-                /*
-                In the example of i += 3, loop_var would be i, and inc_value would be 3.
-                Once again, let vs. var may not be trivial.
-                */
-                let loop_var = line[0]
-                var inc_value = line[1]
-                
-                // Check if we're incrementing by a number or by another variables value
-                //As the old comment says, if inc_value is a variable, then its value is substituted in.
-                if (!mips.isNumeric(inc_value) && Object.prototype.hasOwnProperty.call(for_interpreter.registers, inc_value)) {
-                    inc_value = for_interpreter.registers[inc_value]
-                }
-
-                //The addition is performed here.
-
-                for_interpreter.registers[loop_var] = mips.add(for_interpreter.registers[loop_var], inc_value) // Incrementing conditional value
+                changeByMany(key.conditions, for_interpreter.registers, mips.add)
             }
             /*
             If the third element of conditions includes "-=", the following is done.
             This is highly similar to the previous piece of code.
             */
             else if (key.conditions[2].includes("-=")) {
-                let line = key.conditions[2]
-                    .trim()
-                    .split("-=")
-                    .filter(x => {      // Making sure no empty elements are added to the instruction line
-                        return x.length > 0
-                    })
-                if (line.length != 2) {
-                    console.log("Error with incrementer in for loop")
-                }
-                let loop_var = line[0]
-                //previosuly defined variable
-                var inc_value = line[1]
+                changeByMany(key.conditions, for_interpreter.registers, mips.sub)
+            }
 
-                //For some reason, in this code piece loop_var and inc_value are output to the console.
-                console.log(loop_var + "   " + inc_value)
-                // Check if we're incrementing by a number or by another variables value
-                if (!mips.isNumeric(inc_value) &&  Object.prototype.hasOwnProperty.call(for_interpreter.registers, inc_value)) {
-                    inc_value = for_interpreter.registers[inc_value]
-                }
-                for_interpreter.registers[loop_var] = mips.sub(for_interpreter.registers[loop_var], inc_value)
+            else if (key.conditions[2].includes("*=")) {
+                changeByMany(key.conditions, for_interpreter.registers, mips.mult)
+            }
+
+            else if (key.conditions[2].includes("/=")) {
+                changeByMany(key.conditions, for_interpreter.registers, mips.div)
             }
         }
 
@@ -365,7 +149,7 @@ export default function execute(instruction, registers, output) {
             If the for loop should not continue executing, the loop is broken out of.
             May want to simplify this code by just writing while (branch()) at the top insead.
             */
-            if (!branch()) {
+            if (!branch(key.conditions, for_interpreter.registers)) {
                 break;
             }
             
@@ -385,44 +169,12 @@ export default function execute(instruction, registers, output) {
         var if_interpreter = new Interpreter(key.blocks_list, registers)
         if_interpreter['conditions'] = key.conditions
         
-        // Determine when to branch and what comparison to make
-        /*
-        This method is very similar to the one used for func "for" in that determines if a block should be executed.
-        Code reuse should be done here.
-        The only inconsistency is that this method takes in a parameter, conditions, instead of accessing conditions directly from the instruction.
-        Uncertain why there is a difference here, if there is a reason.
-        */
-        let branch = (conditions) => {
-            let line = conditions.trim().split(" ")
-
-            let register = (Object.prototype.hasOwnProperty.call(if_interpreter.registers, line[0])) ? if_interpreter.registers[line[0]] : line[0]  // variable assigned to register ('i' in most cases)
-            let operator = line[1]  // Should be a comparison operator
-            let comparator = (Object.prototype.hasOwnProperty.call(if_interpreter.registers, line[2])) ? if_interpreter.registers[line[2]] : line[2]// Operand 2
-            
-            switch(operator) {
-                case "<":
-                    return mips.blt(register, comparator)
-                case ">":
-                    return mips.bgt(register, comparator)
-                case "<=":
-                    return mips.blte(register, comparator)
-                case ">=":
-                    return mips.bgte(register, comparator)       
-                case "==":
-                    return mips.beq(register, comparator)
-                default:
-                    console.log("if operator default")
-                    break;
-
-            }
-        }
-        
         // Running the if condition and body here if condition is True
         /*
         If the if condition is true, then the code in the if block is executed and the output is added to the output of the main interpreter.
         The execute function then returns so that any else-ifs or elses are not run.
         */
-        if (branch(if_interpreter['conditions'])) {
+        if (branch(if_interpreter['conditions'], if_interpreter.registers)) {
             if_interpreter = new Interpreter(key.blocks_list, registers)
             if_interpreter.run()
             for (let i in if_interpreter.output) {
@@ -513,44 +265,7 @@ export default function execute(instruction, registers, output) {
         Keep in mind the assumptions that this program is making about spacing, we need to make sure that spacing is consistent within our code blocks.
         */
         else if (key.value.split(' ').length > 2) {
-
-            // Extracting variable values if there are any
-            /*
-            Value was already split into an array above, that should be reused.
-            Anyway, the expression variable will be the expression after variable substitutions are made.
-            */
-            let expression = key.value.split(' ').map(x => Object.prototype.hasOwnProperty.call(registers, x) ? registers[x] : x);
-            // Computing mult/div then add/sub
-            /*
-            What follows is exactly the same as the method used for evaluating expressions when a variable is set to them, for example, i = 3 + 7.
-            Code reuse should be employed here.
-            */
-            for (let i = 0; i < expression.length; i++) {
-                let x = expression[i]
-                if (x == "*") {
-                    let new_val = Math.round(mips.mult(expression[i-1], expression[i+1]))
-                    expression.splice(--i, 3, new_val)
-                }
-                else if (x == "/") {
-                    let new_val = Math.round(mips.div(expression[i-1], expression[i+1]))
-                    expression.splice(--i, 3, new_val)
-                    
-                    }
-            }
-            for (let i = 0; i < expression.length; i++) {
-                let x = expression[i]
-
-                if (x == "+") {
-                    let new_val = Math.round(mips.add(expression[i-1], expression[i+1]))
-                    expression.splice(--i, 3, new_val)
-                }
-                else if (x == "-") {
-                    let new_val = Math.round(mips.sub(expression[i-1], expression[i+1]))
-                    expression.splice(--i, 3, new_val)
-                    } 
-            }
-            //content is set to equal the result of evalutaing the expression.
-            content = expression.join()
+            content = evaluateExpression(key.value.split(' '), registers)
         } 
 
         /*
@@ -559,4 +274,201 @@ export default function execute(instruction, registers, output) {
         */
         output.push(content)
     }
+}
+
+function evaluateExpression(value, registers) {
+
+    // Extracting variable values if there are any
+    /*
+    The following line replaces any variables in the expressions with their values and saves it in the expression variable.
+    Once again this does not seem to check for the case where an unitialized variable is used.
+    Perhaps we ought to include that detection in the decode method.
+    */
+
+    let expression = value.map(x => substituteVariable(registers, x));
+    // Computing mult/div then add/sub
+    /*
+    The following two loops complete the math expression.
+    The first loop performs any multiplication and division while the second loop performs any addition and subtraction, in accordance with the order of operations.
+    */
+    for (let i = 0; i < expression.length; i++) {
+        //x becomes the expression element being currently iterated over.
+        let x = expression[i]
+        /*
+        If the multiplication sign is seen, then multiplication is performed on the numbers on either side.
+        The product is rounded to the nearest integer. May want to change this later.
+        The result is then substituted into the expression, replacing where the operands and multiplication symbol were.
+        It should be noted that this way of evaluating expressions assumes that they are properly formatted, which may not be the case.
+        We may need to check for that.
+        This same process is done for division, addition, and subtraction.
+        Potential for code reuse.
+        */
+        if (x == "*") {
+            let new_val = Math.round(mips.mult(expression[i-1], expression[i+1]))
+            expression.splice(--i, 3, new_val)
+        }
+        else if (x == "/") {
+            let new_val = Math.round(mips.div(expression[i-1], expression[i+1]))
+            expression.splice(--i, 3, new_val)
+            
+        }
+    }
+
+    for (let i = 0; i < expression.length; i++) {
+        let x = expression[i]
+        if (x == "+") {
+            let new_val = Math.round(mips.add(expression[i-1], expression[i+1]))
+            expression.splice(--i, 3, new_val)
+        }
+        else if (x == "-") {
+            let new_val = Math.round(mips.sub(expression[i-1], expression[i+1]))
+            expression.splice(--i, 3, new_val)
+        } 
+    }
+    /*
+    The final result, which should be all that is left in expression, is then saved to the appropriate variable.
+    Uncertain why the join method is needed here, perhaps the value stored in registers needs to be a String.
+    That's probably it.
+    */
+    return expression.join()
+
+} 
+
+function performMathOp(registers, var1, var2, operation) {
+    // Next 2 lines checks which code entries are integers vs a preexisting register value (variable)
+    /*
+    I'm not even sure if the above comment is right but I doubt it.
+    Instead, if var1 or var2 is numeric, then val1 or val2 should just be set to that number.
+    Otherwise, val1 or val2 should be set to the value of the variable with var1 or var2's name.
+    In general, keen awareness should be maintained of what this program is currently capable of.
+    */
+    let val1 = mips.isNumeric(var1) ? var1 : registers[var1]  
+    let val2 = mips.isNumeric(var2) ? var2 : registers[var2] 
+    return Math.round(operation(val1, val2))
+}
+
+function changeByOne(conditions, registers, operation) {
+    let line = []
+    if (operation.name == 'add') {
+        line = conditions[2]
+        .trim()
+        .split("++")
+        .filter(x => {      // Making sure no empty elements are added to the instruction line
+            return x.length > 0
+        })
+    }
+    else {
+        line = conditions[2]
+        .trim()
+        .split("--")
+        .filter(x => {      // Making sure no empty elements are added to the instruction line
+            return x.length > 0
+        })
+    }
+    
+    /*
+    If line is not one element, an error message is displayed to the console.
+    May want to do more than that in case this happens.
+    */
+    if (line.length != 1) {
+        console.log("Error with incrementer in for loop")
+    }
+
+    //The variable is incremented within registers, as is appropriate.
+    registers[line[0]] = operation(registers[line[0]], 1)
+}
+
+function changeByMany(conditions, registers, operation) {
+    /*
+    Just like before, line becomes an array that contains the words of the third element of conditions, barring "+=".
+    This is a key opportunity for code reuse.
+    */
+    let line = []
+    if (operation.name == 'add') {
+        line = conditions[2]
+        .trim()
+        .split("+=")
+        .filter(x => {      // Making sure no empty elements are added to the instruction line
+            return x.length > 0
+        })
+    }
+    else if (operation.name == 'sub') {
+        line = conditions[2]
+        .trim()
+        .split("-=")
+        .filter(x => {      
+            return x.length > 0
+        })
+    }
+    else if (operation.name == 'mult') {
+        line = conditions[2]
+        .trim()
+        .split("*=")
+        .filter(x => {      
+            return x.length > 0
+        })
+    }
+    else {
+        line = conditions[2]
+        .trim()
+        .split("/=")
+        .filter(x => {      
+            return x.length > 0
+        })
+    }
+
+
+    //There is an error if line is not two elements long, as it should contain the addends.
+    if (line.length != 2) {
+        console.log("Error with incrementer in for loop")
+    }
+    
+    // Check if we're incrementing by a number or by another variables value
+    //As the old comment says, if inc_value is a variable, then its value is substituted in.
+    line[1] = substituteVariable(registers, line[1])
+
+    //The addition is performed here.
+
+    registers[line[0]] = operation(registers[line[0]], line[1]) // Incrementing conditional value
+}
+
+function branch(conditions, registers) {
+    /*
+    line becomes an array consisting of the words in the second part of the for loop.
+    Uncertain why trim() is needed to remove leading and trailing whitespace.
+    */
+    let line = conditions[1].trim().split(" ")
+    /*
+    If the first word is a variable (that registers has), register becomes its value.
+    Otherwise, which assumes it is something other than a variable, register is just set to that.
+    */
+    let register = substituteVariable(registers, line[0])
+    //operator is set to the second word, which indeed should be an operator.
+    let operator = line[1]  // Should be a comparison operator
+    //The same operation is done to assign comparator as was done to assign register, except it is done on the third word this time.
+    let comparator = substituteVariable(registers, line[2])
+    
+    /*
+    Different calculations are done depending on what the operator is.
+    I realize now that names for register and comparator are a bit misleading, they are really just operands.
+    If the default case is hit, which it should not be, a message is displayed to the console.
+    break statements may not be needed after each case, but perhaps they should be added to be safe.
+    */
+    switch(operator) {
+        case "<":
+            return mips.blt(register, comparator)
+        case ">":
+            return mips.bgt(register, comparator)
+        case "<=":
+            return mips.blte(register, comparator)
+        case ">=":
+            return mips.bgte(register, comparator)       
+        case "==":
+            return mips.beq(register, comparator)
+        default:
+            console.log("default branch case on operator: " + operator)
+            break;
+
+    }
+    
 }

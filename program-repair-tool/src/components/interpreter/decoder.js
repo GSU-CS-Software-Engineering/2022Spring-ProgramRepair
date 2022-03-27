@@ -516,7 +516,7 @@ function clipSemicolon(word) {
     return word
 }
 
-function buildLWInstruction(var1, value) {
+export function buildLWInstruction(var1, value) {
     let instruction = {
         func: "lw",      
         var1: var1,
@@ -569,6 +569,6 @@ function buildPrintInstruction(print_container) {
     return instruction;
 }
 
-function substituteVariable(registers, value) {
+export function substituteVariable(registers, value) {
     return Object.prototype.hasOwnProperty.call(registers, value) ? registers[value] : value
 }

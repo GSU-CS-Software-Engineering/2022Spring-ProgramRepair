@@ -31,6 +31,8 @@ class Problems {
            { name: 'If Statement 1', prompt: 'Complete the if statement, please.', code: ['int i = 4;', 'if (i < 4) {', 'System.out.println("Less than four!");', '}', 'else if (i == 4) {', 'System.out.println("Equal to four!");', '}', 'else {', 'System.out.println("Greater than four!");', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Equal to four!' },
            { name: 'If Statement 2', prompt: 'Complete the if statement, please.', code: ['int i = 3;', 'if (i < 4) {', 'System.out.println("Less than four!");', '}', 'else if (i == 4) {', 'System.out.println("Equal to four!");', '}', 'else {', 'System.out.println("Greater than four!");', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Less than four!' },
            { name: 'If Statement 3', prompt: 'Complete the if statement, please.', code: ['int i = 5;', 'if (i < 4) {', 'System.out.println("Less than four!");', '}', 'else if (i == 4) {', 'System.out.println("Equal to four!");', '}', 'else {', 'System.out.println("Greater than four!");', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Greater than four!' },
+           { name: 'Expression test 1', prompt: 'Testing mathematical expression.', code: ['int a = 5 + 9 * 10;', 'System.out.println(a);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '95' },
+           { name: 'Expression test 2', prompt: 'Testing printing a mathematical expression.', code: ['System.out.println(5 + 9 * 10);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '95' },
         ];
     }
 
