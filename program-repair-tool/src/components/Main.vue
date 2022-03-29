@@ -170,6 +170,16 @@ export default {
         clearConsole() {
             this.output.data.splice(0)
         },
+
+        // Force the components to re-render
+        reload() {
+            // TODO: Find out why this isn't updating the draggable component zones
+            this.$forceUpdate();
+
+            // TODO: Get this to work without reloading window
+            window.location.reload();
+        },
+
         /*
         This method returns a shuffled array.
         As it is implemented now, it starts with the last element of the array and iterates backwards, but skips the first element of the array.

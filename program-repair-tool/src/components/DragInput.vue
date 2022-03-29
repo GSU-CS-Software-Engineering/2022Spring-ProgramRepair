@@ -11,7 +11,7 @@ Below is the template for this component.
         <!--
         This div holds the part of the screen where code blocks can be dragged around.
         -->
-        <div class="container">
+        <div class="workspace-container">
             <!--
             The following draggable tag is a component that was imported below.
             v-model="problem.code" will make it so that the code field of the problem attribute of the draggable component will match the code field of the problem attribute of this component, which is declared below.
@@ -25,12 +25,12 @@ Below is the template for this component.
            unexoected mutatation of problem prop line 33
             -->
             <draggable
-                v-model="problem.code"
+                v-model="items"
                 transition="100"
                 class="drop-zone">
                 <template v-slot:item="{ item }">
                     <div class="draggable-item">
-                    {{ item }}
+                        {{ item }}
                     </div>
                 </template>
             </draggable>
@@ -40,8 +40,8 @@ Below is the template for this component.
         -->
         <div>
             <button class="button" @click="run">Run</button>
+            <button class="button" @click="clearWorkspace">Clear</button>
             <button class="button" @click="clearConsole">Clear Console</button>
-            <button class="button" @click="returnHome">Home</button>
         </div>
     </div>
 </template>
@@ -52,7 +52,7 @@ import Draggable from 'vue3-draggable'
 Unsure why an asterisk was needed to import from Interpreter.js, importing semantics can be looked up if needed.
 n: it seems that the asterisk imports everything from the file instead of designated portions. This is a wildcard import. Not recommended generally but still used.https://rules.sonarsource.com/javascript/RSPEC-2208
 */
-import Interpreter from "./interpreter/Interpreter.js"
+import * as Interpreter from "./interpreter/Interpreter.js"
 
 export default {
     //Draggable is registered as a component, which allows it to be used in the template above.
@@ -64,10 +64,10 @@ export default {
     props: {
         problem: Object
     },
-    //This component has one data attribute named output which is a String.
     data() {
         return {
-            output: String
+            output: String,
+            items: []
         };
     },
     methods: {
@@ -82,13 +82,13 @@ export default {
             //A variable is created in order to store the string representation of the code the user has put together.
             var blocks_list = ''
             //For each element in the problem's code, its content followed by a new line is appended to the blocks_list variable.
-            this.$props.problem.code.forEach(x => {
+            this.$data.items.forEach(x => {
                 blocks_list += `${x}\n`
             })
             let undefined;  // constructor requires two arguments and has checks for undefined
             //An instance of the interpreter is created and run with the code.
             //The semantics of how it is created can be checked when we look at the interpreter code.
-            let i = new Interpreter(blocks_list, undefined)
+            let i = new Interpreter.Interpreter(blocks_list, undefined)
             i.run()
             
             // Submitting output for rendering to STDOUT
@@ -122,33 +122,44 @@ export default {
             else {
                 alert("Try Again. You can do this!")
             }
-            },
+        },
 
         //This function fires a clearConsole event with no data.
         clearConsole() {
             this.$emit("clearConsole")
         },
-        returnHome() { //Alert message when user uses 'Home' button
-            if (window.confirm("Are you sure you want to return home?\nProgress may be lost if not saved")) {
-                //window.onbeforeunload = null
-                window.location.replace('http://localhost:8080');
+
+        //This function shuffles an input array
+        shuffle(array) {
+            this.$parent.shuffle(array);
+        },
+
+        //This function calles the parent function: reload()
+        reload() {
+            this.$parent.reload();
+        },
+
+        //This function (attemps to) clears the workspace 
+        clearWorkspace() {
+            // If the inventory size is 0, copy all the data
+            // from the workspace.
+            if (this.$props.problem.code.length == 0) {
+                console.log("Inventory is empty, shuffling new one.");
+                this.$props.problem.code = this.$data.items;
+                this.$data.items = [];
+
+            // Otherwise, move the remaining blocks back to the inventory.
+            } else {
+                console.log("Moving all codeblocks back to the inventory.");
+                this.$props.problem.code = this.shuffle(this.$props.problem.code.concat(this.$data.items));
             }
+
+            // reload the component
+            this.reload();
         }
-    }
+    },
+    
 };
-/*To ensure user doesn't close Tab or Window (Impacts all changes within the website, fixable by using window.onbeforeunload = null (example in returnHome) but unsure if needed)
-    window.onbeforeunload = function (e) {
-        e = e || window.event;
-
-        // For IE and Firefox prior to version 4
-        if (e) {
-         e.returnValue = 'Any string';
-        }
-
-        // For Safari
-        return 'Any string';
-    };
-*/
 </script>
 
 <!--
@@ -160,7 +171,7 @@ Some styling is done on buttons, and several CSS classes are defined and they ar
         padding: 10px 20px;
         margin-right: 5px;
     }
-    .container {
+    .workspace-container {
     width: 500px;
     display: flex;
     flex-direction: row;
