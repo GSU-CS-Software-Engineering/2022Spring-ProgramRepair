@@ -16,7 +16,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
     Otherwise, the corresponding element in kw_vals becomes an array of elements, where each element in it is a "word" in the original element, and words are delimited by spaces.
     This is actually done incorrectly, as it only works properly if words are separated by one space only.
     Uncertain if this will be an actual problem, since we should have control over how code blocks are formatted, but it's worth keeping in mind.
-    Also worth keeping in mind is that it does not appear that the code makes any distinction between System.out.print or System.out.println, and may even confirm if the required text after "System.out" is there.
+    Also worth keeping in mind is that it does not appear that the code makes any distinction between System.out.print or System.out.println, and may not even confirm if the required text after "System.out" is there.
     Uncertain if this will be an issue either, considering our control over what code can be submitted.
     */
     var kw_vals = blocks_list.map( x => {
@@ -64,10 +64,6 @@ export default function decode(registers, blocks_list, instructions, output) {  
         */
         let new_blocks_list;
         let conditions;
-        let block_start;
-        let block_end;
-        var scope_stack;
-        let block_len;
 
         /*
         This switch statement is nearly the rest of the entire function and is quite large.
@@ -162,10 +158,8 @@ export default function decode(registers, blocks_list, instructions, output) {  
             */
 
             case "variable": // (c = a + b +....(+-*/))
-                //This variable, indexOfOperator, is set to 0 at first, and will be used later.
-                var indexOfOperator = 0
                 /*
-                If the line has more then three words then it is understood to involve an expression.
+                If the line has more than three words then it is understood to involve an expression.
                 Like before, an expression variable is set to be only the expression itself, with all semicolons removed.
                 Once again, the instruction's func is set to lw.
                 var1 is set to the name of the attribute, uncertain why it wasn't just done with line[0], unless the code was supposed to be reused as its own function.
@@ -184,15 +178,15 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 The instruction's var1 is also set to the variable name.
                 The instruction's var2 is set to what is being added to the variable, with any semicolons removed.
                 */
-                else if (line[1] == "+=" > 0 && line.length == 3) {  // Only works if line length == 3; ( num += 2 ) and ( num += num )
-                    instruction = buildMathInstruction("addi", line[0], line[0], clipSemicolon(line[2]))
+                else if (line[1] == "+=" && line.length == 3) {  // Only works if line length == 3; ( num += 2 ) and ( num += num )
+                    instruction = buildMathInstruction("add", line[0], line[0], clipSemicolon(line[2]))
                 }   
                 /*
                 Otherwise, if the line contains the word "-" that is not at the beginning, the following is done.
                 This is exactly the same as what begins on line 278, except it is concerned with subtraction and not addition.
                 */
                 else if (line[1] == "-=" && line.length == 3) {
-                    instruction = buildMathInstruction("subi", line[0], line[0], clipSemicolon(line[2]))
+                    instruction = buildMathInstruction("sub", line[0], line[0], clipSemicolon(line[2]))
                 }
                 /*
                 Otherwise, if the line contains the word "*" that is not at the beginning, the following is done.
@@ -227,7 +221,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 Notably, semicolons do not seem to be removed here. Could be problematic.
                 */
                 else if (line[1] == "=" && line.length == 3) {  // Assigning a single value to a preexisting register (a = 5)
-                    instruction = buildMathInstruction("addi", line[0], clipSemicolon(line[2]), 0)
+                    instruction = buildMathInstruction("add", line[0], clipSemicolon(line[2]), 0)
                 }
                 /*
                 Otherwise there is presumed to be an error, and the line's contents are logged to the console with an error message.
@@ -250,6 +244,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 // Getting everything between the parentheses
                 //The following retrieves the text between the parentheses and delimites each piece by semicolons, storing it in the conditions variable.
                 conditions = line.split("(")[1].split(")")[0].split(";")
+                console.log(conditions)
                 // Beginning and end of lines being executed by the for loop
 
                 let scope = get_stack_scope(kw_vals, "for")
@@ -323,7 +318,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 //error:unexpected lexical decalration in case block (no-case-declaraton) 294-295
                 /*
                 Unsure of what the above comment is talking about right now.
-                else_container is used to store any instructions related to the blocks found in this process of storing any else-if or else statements that follow and if-statement.
+                else_container is used to store any instructions related to the blocks found in this process of storing any else-if or else statements that follow an if-statement.
                 */
                 let else_container = []
                 //Currently uncertain why this variable is needed in the first place.
@@ -418,9 +413,10 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     If the kw_vals placeHolderth element is not an object or the placeHolder index is out of bounds, terminate this loop.
                     I am certainly uncertain why this is done.
                     See notes above this loop as to why.
+                    It does not seem to be needed right now, but I'm leaving it commented out just in case.
                     */
 
-                    if (typeof(kw_vals[placeHolder]) != "object" || placeHolder > kw_vals.length) break;
+                    //if (typeof(kw_vals[placeHolder]) != "object" || placeHolder > kw_vals.length) break;
                     
                 }
 

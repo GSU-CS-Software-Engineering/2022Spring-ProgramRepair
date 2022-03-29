@@ -38,11 +38,11 @@ export default function execute(instruction, registers, output) {
     Once again, this calls into question the existence of the previous code piece.
     A lot of this execution code appears redundant and in need of reworking.
     */
-    else if (key.func == "addi") {  // Flexible addition for both integer vals and variable vals
+    else if (key.func == "add") {  // Flexible addition for both integer vals and variable vals
         registers[key.reg_va] = performMathOp(registers, key.var1, key.var2, mips.add)
     }
     //The following is analogous to "addi". Roughly the same comments apply.
-    else if (key.func == "subi") {  // Flexible subtraction for both integer vals and variable vals              
+    else if (key.func == "sub") {  // Flexible subtraction for both integer vals and variable vals              
         registers[key.reg_va] = performMathOp(registers, key.var1, key.var2, mips.sub)
     }
     //The following is analogous to "addi" and "subi". Roughly the same comments apply.
@@ -149,7 +149,7 @@ export default function execute(instruction, registers, output) {
             If the for loop should not continue executing, the loop is broken out of.
             May want to simplify this code by just writing while (branch()) at the top insead.
             */
-            if (!branch(key.conditions, for_interpreter.registers)) {
+            if (!branch(key.conditions, for_interpreter.registers, 'for')) {
                 break;
             }
             
@@ -174,7 +174,7 @@ export default function execute(instruction, registers, output) {
         If the if condition is true, then the code in the if block is executed and the output is added to the output of the main interpreter.
         The execute function then returns so that any else-ifs or elses are not run.
         */
-        if (branch(if_interpreter['conditions'], if_interpreter.registers)) {
+        if (branch(if_interpreter['conditions'], if_interpreter.registers, 'if')) {
             if_interpreter = new Interpreter(key.blocks_list, registers)
             if_interpreter.run()
             for (let i in if_interpreter.output) {
@@ -200,7 +200,8 @@ export default function execute(instruction, registers, output) {
                     I am a bit uncertain exactly how this works at the moment, but it seems to be working correctly.
                     It should be noted that the current implementation leads to this statement's conditions being evaluated twice, may want to make this more efficient if possible.
                     */
-                    if (branch(statement.conditions)) {
+                    console.log(statement.conditions)
+                    if (branch(statement.conditions, registers, 'if')) {
                         execute(statement, registers, output)
                         break
                     }
@@ -432,16 +433,26 @@ function changeByMany(conditions, registers, operation) {
     registers[line[0]] = operation(registers[line[0]], line[1]) // Incrementing conditional value
 }
 
-function branch(conditions, registers) {
+function branch(conditions, registers, type) {
     /*
     line becomes an array consisting of the words in the second part of the for loop.
     Uncertain why trim() is needed to remove leading and trailing whitespace.
     */
-    let line = conditions[1].trim().split(" ")
+   let line;
+    if (type == 'if') {
+        line = conditions.trim().split(" ")
+    }
+    else if (type == 'for') {
+        line = conditions[1].trim().split(" ")
+    }
+    else {
+        console.log("Error: Unknown use of branch()")
+    }
     /*
     If the first word is a variable (that registers has), register becomes its value.
     Otherwise, which assumes it is something other than a variable, register is just set to that.
     */
+    console.log(conditions)
     let register = substituteVariable(registers, line[0])
     //operator is set to the second word, which indeed should be an operator.
     let operator = line[1]  // Should be a comparison operator
