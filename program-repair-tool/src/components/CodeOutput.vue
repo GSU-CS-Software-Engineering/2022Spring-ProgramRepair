@@ -7,7 +7,7 @@ First is a div that has an attribute called output, which is set to always equal
 -->
 <template>
     <div class="code-output" v-bind:output="output" >
-        <h3 class="header">Stdout:</h3>
+        <h3 class="header">Output:</h3>
         <ul class="output">
             <!--
             The code below creates a list element for every entry inside of the output arrary.
@@ -41,8 +41,7 @@ export default {
 </script>
 
 <!--
-Below is the style, and again, the scoped boolean is deprecated.
-Not sure why the removed the margin setting, may experiment with that.
+Not sure why they removed the margin setting, may experiment with that.
 n: margin is set to auto in CreateProblems; should it be the same everywhere?
 -->
 
@@ -58,11 +57,11 @@ n: margin is set to auto in CreateProblems; should it be the same everywhere?
         text-align: left;
     }
     .header {
-        padding-left: 10px;
+        padding-left: 0px;
     }
     .output {
         background-color: rgb(231, 231, 231);
-        width: 500px;
+        width: 430px;
         height: 300px;
     }
 </style>

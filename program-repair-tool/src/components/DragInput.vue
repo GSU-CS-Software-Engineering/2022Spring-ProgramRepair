@@ -1,7 +1,4 @@
 <!--
-Uncertainties currently reside on lines 27, 29, 87, 109, and 118.
--->
-<!--
 Below is the template for this component.
 -->
 
@@ -10,10 +7,7 @@ Below is the template for this component.
     The div that contains all of this component's template has the class drag-input, I am not sure where this is defined right now, if it's defined anywhere.
     -->
     <div class="drag-input" :output="output">
-        <!--
-        The problem's prompt is displayed in this header.
-        -->
-        <h3 class="header">Prompt: {{ problem.prompt }}</h3>
+        <h3 class="header">Workspace:</h3>
         <!--
         This div holds the part of the screen where code blocks can be dragged around.
         -->
@@ -24,9 +18,10 @@ Below is the template for this component.
             The code transition="100" does not seem to do anything, I am not sure what the intention was, but maybe we'll put time into making the interface more animated.
             The draggable component has class drop-zone, which is defined in the style section.
             There is an inner template which I assume is used to represent the content inside the draggable area.
-            The code v-slot:item="{ item }" specifies that this slot, which is contained in this template, will have an attribute named item with the value of an attribute named item from the parent, though I am uncertain about where exactly this is coming from.
+            The code v-slot:item="{ item }" specifies that this slot, which is contained in this template, will have an attribute named item with the value of an attribute named item from the parent, and this originates from Main.vue.
             For more information on v-slot check: https://vuejs.org/guide/components/slots.html
-            There is a div with a draggable-item class, which is defined in the style below, and within the div the item's title is displayed. Still uncertain on item's origin.
+            There is a div with a draggable-item class, which is defined in the style below, and within the div the item is displayed.
+            In effect this creates the blocks for each element inside the code array.
            unexoected mutatation of problem prop line 33
             -->
             <draggable
@@ -35,7 +30,7 @@ Below is the template for this component.
                 class="drop-zone">
                 <template v-slot:item="{ item }">
                     <div class="draggable-item">
-                    {{ item.title }}
+                    {{ item }}
                     </div>
                 </template>
             </draggable>
@@ -46,16 +41,18 @@ Below is the template for this component.
         <div>
             <button class="button" @click="run">Run</button>
             <button class="button" @click="clearConsole">Clear Console</button>
+            <button class="button" @click="returnHome">Home</button>
         </div>
     </div>
 </template>
+
 <script>
 import Draggable from 'vue3-draggable'
 /*
 Unsure why an asterisk was needed to import from Interpreter.js, importing semantics can be looked up if needed.
 n: it seems that the asterisk imports everything from the file instead of designated portions. This is a wildcard import. Not recommended generally but still used.https://rules.sonarsource.com/javascript/RSPEC-2208
 */
-import * as Interpreter from "./interpreter/Interpreter.js"
+import Interpreter from "./interpreter/Interpreter.js"
 
 export default {
     //Draggable is registered as a component, which allows it to be used in the template above.
@@ -84,15 +81,14 @@ export default {
             // Converting drag/drop components to strings, then running through interpreter
             //A variable is created in order to store the string representation of the code the user has put together.
             var blocks_list = ''
-            //For each element in the problem's code, its title followed by a new line is appended to the blocks_list variable.
-            //Still uncertain about why the name title is used, or where exactly the code attribute is defined.
+            //For each element in the problem's code, its content followed by a new line is appended to the blocks_list variable.
             this.$props.problem.code.forEach(x => {
-                blocks_list += `${x.title}\n`
+                blocks_list += `${x}\n`
             })
             let undefined;  // constructor requires two arguments and has checks for undefined
             //An instance of the interpreter is created and run with the code.
             //The semantics of how it is created can be checked when we look at the interpreter code.
-            let i = new Interpreter.Interpreter(blocks_list, undefined)
+            let i = new Interpreter(blocks_list, undefined)
             i.run()
             
             // Submitting output for rendering to STDOUT
@@ -106,17 +102,17 @@ export default {
             /*
             The following statement fires an updateOutput event with value output_array.
             The await keyword pauses the asynchronous function until a promise is fulfilled or rejected.
-            The code is likely intended to pause execution until the event has been recieved by the listener and acted upon.
-            For the moment I am uncertain as to if that is what this statement is actually doing, or if the await keyword is even necessary.
+            The code is to pause execution until the event has been recieved by the listener and acted upon.
             */
             await this.$emit("updateOutput", output_array)
             /*
             cur_problem is either a JavaScript object parsed from JSON retrieved from the client's machine or an object with an answer of "Hello World" if no item called cur-problem is found.
             */
             let cur_problem=JSON.parse(window.localStorage.getItem('cur-problem')) || {answer: "Hello World"};
+
+            console.log(cur_problem.answer)
             /*
             If the problem's answer matches the output array, the code is marked as correct.
-            Uncertain why this works when output_array is not a String like apparently intended, will need too look at where a problem and its attributes are defined.
             */
             if(cur_problem.answer == output_array) {
                 console.log("VALID")
@@ -132,12 +128,30 @@ export default {
         clearConsole() {
             this.$emit("clearConsole")
         },
+        returnHome() { //Alert message when user uses 'Home' button
+            if (window.confirm("Are you sure you want to return home?\nProgress may be lost if not saved")) {
+                //window.onbeforeunload = null
+                window.location.replace('http://localhost:8080');
+            }
+        }
     }
 };
+/*To ensure user doesn't close Tab or Window (Impacts all changes within the website, fixable by using window.onbeforeunload = null (example in returnHome) but unsure if needed)
+    window.onbeforeunload = function (e) {
+        e = e || window.event;
+
+        // For IE and Firefox prior to version 4
+        if (e) {
+         e.returnValue = 'Any string';
+        }
+
+        // For Safari
+        return 'Any string';
+    };
+*/
 </script>
 
 <!--
-Once again, the scoped boolean is deprecated and should not be used.
 Some styling is done on buttons, and several CSS classes are defined and they are used in the above code.
 -->
 
@@ -171,7 +185,7 @@ Some styling is done on buttons, and several CSS classes are defined and they ar
     }
     .header {
         padding-inline: 20px;
-        padding-left: 10px;
+        padding-left: 30px;
         text-align: left;
         
     }

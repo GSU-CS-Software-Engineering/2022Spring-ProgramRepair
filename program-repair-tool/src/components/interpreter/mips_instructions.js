@@ -79,6 +79,6 @@ This function returns true if n can successfully be converted to a number and is
 (the isFinite function converts n into a number if need be before determining its finiteness, so parseFloat is not needed for it)
 (See more at: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isFinite)
 */
-function isNumeric(n) {
+export function isNumeric(n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
 }
