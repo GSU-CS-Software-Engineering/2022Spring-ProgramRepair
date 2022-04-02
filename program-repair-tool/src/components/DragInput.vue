@@ -94,6 +94,11 @@ export default {
             // Submitting output for rendering to STDOUT
             //The output from the interpreter is obtained.
             let output_array = i.get_output();
+
+            if (output_array.length > 0 && Object.prototype.hasOwnProperty.call(output_array[0], 'errorType')) {
+                output_array = [output_array[0].message]
+            }
+
             /*
             The join method returns the array's contents separated by a certain character, in this case, a ",".
             This makes the following statement dubious since the returned value is never stored anwyehre, and output_array itself is unchanged.

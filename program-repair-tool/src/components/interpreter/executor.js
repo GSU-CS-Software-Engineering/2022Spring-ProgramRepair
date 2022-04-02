@@ -1,6 +1,7 @@
 import * as mips from './mips_instructions.js'
 import Interpreter from './Interpreter.js';
-import { buildLWInstruction, substituteVariable } from './decoder.js';
+import { buildLWInstruction, substituteVariable, undeclaredVariableMessage } from './decoder.js';
+import Error from './Error.js'
 // Instructions execute after each instruction is decoded, so it reads and executes code from top to bottom.
 /*
 Like the previous comment says, this method is run after each instruction is decoded.
@@ -29,8 +30,18 @@ export default function execute(instruction, registers, output) {
         */
 
         else if (key.value.length > 2) {
-            registers[key.var1] = evaluateExpression(key.value, registers)
+            let res = evaluateExpression(key.value, registers, output)
+            if (res === null) {
+                return 'quit'
+            }
+        
+            registers[key.var1] = res
+
         } 
+
+        else if (key.value.length == 1) {
+            registers[key.var1] = null
+        }
 
     }
     /*
@@ -39,19 +50,39 @@ export default function execute(instruction, registers, output) {
     A lot of this execution code appears redundant and in need of reworking.
     */
     else if (key.func == "add") {  // Flexible addition for both integer vals and variable vals
-        registers[key.reg_va] = performMathOp(registers, key.var1, key.var2, mips.add)
+        let res = performMathOp(registers, key.var1, key.var2, mips.add)
+        if (res === null) {
+            undeclaredVariableMessage(key.var2, output)
+            return 'quit';
+        }
+        registers[key.reg_val] = res
     }
     //The following is analogous to "addi". Roughly the same comments apply.
     else if (key.func == "sub") {  // Flexible subtraction for both integer vals and variable vals              
-        registers[key.reg_va] = performMathOp(registers, key.var1, key.var2, mips.sub)
+        let res = performMathOp(registers, key.var1, key.var2, mips.sub)
+        if (res === null) {
+            undeclaredVariableMessage(key.var2, output)
+            return 'quit';
+        }
+        registers[key.reg_val] = res
     }
     //The following is analogous to "addi" and "subi". Roughly the same comments apply.
     else if (key.func == "mult") {  // Flexible multiplication
-        registers[key.reg_va] = performMathOp(registers, key.var1, key.var2, mips.mult)
+        let res = performMathOp(registers, key.var1, key.var2, mips.mult)
+        if (res === null) {
+            undeclaredVariableMessage(key.var2, output)
+            return 'quit';
+        }
+        registers[key.reg_val] = res
     }
     //The following is analogous to "addi", "subi", and "mult". Roughly the same comments apply.
     else if (key.func == "div") {   // Flexible divison
-        registers[key.reg_va] = performMathOp(registers, key.var1, key.var2, mips.div)
+        let res = performMathOp(registers, key.var1, key.var2, mips.div)
+        if (res === null) {
+            undeclaredVariableMessage(key.var2, output)
+            return 'quit';
+        }
+        registers[key.reg_val] = res
     }
     //There is a desperate need for code reuse with the above code pieces.
 
@@ -67,7 +98,7 @@ export default function execute(instruction, registers, output) {
         Uncertain how this is used for now.
         It doesn't appear to be used at all.
         */
-        for_interpreter['conditions'] = key.conditions
+        //for_interpreter['conditions'] = key.conditions
         //The variable loop_variable is set to an array containing all the words in the first element of conditions, like "int" "i" "=" "4", for example.
         var loop_variable = key.conditions[0].split(" ");
         // console.log("INSIDE FOR LOOP")
@@ -77,7 +108,12 @@ export default function execute(instruction, registers, output) {
         The following creates an instruction where var1 is the variable name and value is what it should be set to, so i and 4 respectively in my previous example.
         It should be noted that this process does not account for a loop that starts like for (; i < 5; i++) {
         */
-        instruction = buildLWInstruction(loop_variable[loop_variable.indexOf("=")-1], loop_variable[loop_variable.indexOf("=")+1])
+        let res = substituteVariable(registers, loop_variable[loop_variable.indexOf("=")+1])
+        if (res === null) {
+            undeclaredVariableMessage(loop_variable[loop_variable.indexOf("=")+1], output)
+            return 'quit'
+        }
+        instruction = buildLWInstruction(loop_variable[loop_variable.indexOf("=")-1], res)
 
         //This line executes the instruction, therefore setting the value to the variable in registers.
         for_interpreter.execute(instruction) // Loading looping variable to a register
@@ -91,7 +127,10 @@ export default function execute(instruction, registers, output) {
             */
             if (key.conditions[2].includes("++")) {
                 
-                changeByOne(key.conditions, for_interpreter.registers, mips.add)
+                let res = changeByOne(key.conditions, for_interpreter.registers, mips.add, output)
+                if (res === 'quit') {
+                    return 'quit';
+                }
 
             }
             /*
@@ -100,27 +139,42 @@ export default function execute(instruction, registers, output) {
             */
             else if (key.conditions[2].includes("--")) {
                 
-                changeByOne(key.conditions, for_interpreter.registers, mips.sub)
+                let res = changeByOne(key.conditions, for_interpreter.registers, mips.sub, output)
+                if (res === 'quit') {
+                    return 'quit';
+                }
 
             }
             //If the third element of conditions includes "+=", the following is done.
             else if (key.conditions[2].includes("+=")) {
-                changeByMany(key.conditions, for_interpreter.registers, mips.add)
+                let res = changeByMany(key.conditions, for_interpreter.registers, mips.add, output)
+                if (res === 'quit') {
+                    return 'quit';
+                }
             }
             /*
             If the third element of conditions includes "-=", the following is done.
             This is highly similar to the previous piece of code.
             */
             else if (key.conditions[2].includes("-=")) {
-                changeByMany(key.conditions, for_interpreter.registers, mips.sub)
+                let res = changeByMany(key.conditions, for_interpreter.registers, mips.sub, output)
+                if (res === 'quit') {
+                    return 'quit';
+                }
             }
 
             else if (key.conditions[2].includes("*=")) {
-                changeByMany(key.conditions, for_interpreter.registers, mips.mult)
+                let res = changeByMany(key.conditions, for_interpreter.registers, mips.mult, output)
+                if (res === 'quit') {
+                    return 'quit';
+                }
             }
 
             else if (key.conditions[2].includes("/=")) {
-                changeByMany(key.conditions, for_interpreter.registers, mips.div)
+                let res = changeByMany(key.conditions, for_interpreter.registers, mips.div, output)
+                if (res === 'quit') {
+                    return 'quit';
+                }
             }
         }
 
@@ -140,16 +194,28 @@ export default function execute(instruction, registers, output) {
             //The interpreter is then run to generate the output of the code within the for loop.
             for_interpreter.run()
             //All of the output generated from the for_interpreter is added to the output of the main interpreter, element by element.
+            if (Object.prototype.hasOwnProperty.call(for_interpreter.output[0], 'errorType')) {
+                output.splice(0, output.length)
+                output.push(for_interpreter.output[0])
+                return 'quit'
+            }
+
             for (let i in for_interpreter.output) {
                 output.push(for_interpreter.output[i])
             }
             //The incrementer function is called in order to perform the logic of the third part of conditions.
-            incrementer()
+            if (incrementer() === 'quit') {
+                return 'quit';
+            }
             /*
             If the for loop should not continue executing, the loop is broken out of.
             May want to simplify this code by just writing while (branch()) at the top insead.
             */
-            if (!branch(key.conditions, for_interpreter.registers, 'for')) {
+            let res = branch(key.conditions, for_interpreter.registers, 'for', output)
+            if (res === null) {
+                return 'quit';
+            }
+            if (!res) {
                 break;
             }
             
@@ -166,17 +232,26 @@ export default function execute(instruction, registers, output) {
         This interpreter has access to the main interpreter's registers.
         The new interpreter's conditions property is set to the conditions of the instruction.
         */
-        var if_interpreter = new Interpreter(key.blocks_list, registers)
-        if_interpreter['conditions'] = key.conditions
+        //var if_interpreter = new Interpreter(key.blocks_list, registers)
+        //if_interpreter['conditions'] = key.conditions
         
         // Running the if condition and body here if condition is True
         /*
         If the if condition is true, then the code in the if block is executed and the output is added to the output of the main interpreter.
         The execute function then returns so that any else-ifs or elses are not run.
         */
-        if (branch(if_interpreter['conditions'], if_interpreter.registers, 'if')) {
-            if_interpreter = new Interpreter(key.blocks_list, registers)
+        let res = branch(key.conditions, registers, 'if', output)
+        if (res === null) {
+            return 'quit';
+        }
+        if (res) {
+            let if_interpreter = new Interpreter(key.blocks_list, registers)
             if_interpreter.run()
+            if (Object.prototype.hasOwnProperty.call(if_interpreter.output[0], 'errorType')) {
+                output.splice(0, output.length)
+                output.push(if_interpreter.output[0])
+                return 'quit'
+            }
             for (let i in if_interpreter.output) {
                 output.push(if_interpreter.output[i])
             }
@@ -201,7 +276,11 @@ export default function execute(instruction, registers, output) {
                     It should be noted that the current implementation leads to this statement's conditions being evaluated twice, may want to make this more efficient if possible.
                     */
                     console.log(statement.conditions)
-                    if (branch(statement.conditions, registers, 'if')) {
+                    let res = branch(statement.conditions, registers, 'if', output)
+                    if (res === null) {
+                        return 'quit';
+                    }
+                    if (res) {
                         execute(statement, registers, output)
                         break
                     }
@@ -226,6 +305,11 @@ export default function execute(instruction, registers, output) {
     else if (key.func == "else") {
         var else_interpreter = new Interpreter(key.blocks_list, registers)
         else_interpreter.run()
+        if (Object.prototype.hasOwnProperty.call(else_interpreter.output[0], 'errorType')) {
+            output.splice(0, output.length)
+            output.push(else_interpreter.output[0])
+            return 'quit'
+        }
         for (let i in else_interpreter.output) {
             output.push(else_interpreter.output[i])
         }
@@ -266,8 +350,17 @@ export default function execute(instruction, registers, output) {
         Keep in mind the assumptions that this program is making about spacing, we need to make sure that spacing is consistent within our code blocks.
         */
         else if (key.value.split(' ').length > 2) {
-            content = evaluateExpression(key.value.split(' '), registers)
+            let res = evaluateExpression(key.value.split(' '), registers, output)
+            if (res === null) {
+                return 'quit';
+            }
+            content = res
         } 
+
+        else {
+            undeclaredVariableMessage(key.value, output)
+            return 'quit';
+        }
 
         /*
         Regardless of what content has become, it is added to the main interpreter's output.
@@ -277,7 +370,7 @@ export default function execute(instruction, registers, output) {
     }
 }
 
-function evaluateExpression(value, registers) {
+function evaluateExpression(value, registers, output) {
 
     // Extracting variable values if there are any
     /*
@@ -286,7 +379,24 @@ function evaluateExpression(value, registers) {
     Perhaps we ought to include that detection in the decode method.
     */
 
-    let expression = value.map(x => substituteVariable(registers, x));
+    let expression = []
+
+    for (let i = 0; i < value.length; i++) {
+        if (['+', '-', '*', '/', '='].includes(value[i])) {
+            expression.push(value[i])
+        }
+        else {
+
+            let res = substituteVariable(registers, value[i])
+            if (res == null) {
+
+                undeclaredVariableMessage(value[i], output)
+                return null
+            }
+            expression.push(res)
+        }
+    }
+
     // Computing mult/div then add/sub
     /*
     The following two loops complete the math expression.
@@ -343,12 +453,15 @@ function performMathOp(registers, var1, var2, operation) {
     Otherwise, val1 or val2 should be set to the value of the variable with var1 or var2's name.
     In general, keen awareness should be maintained of what this program is currently capable of.
     */
-    let val1 = mips.isNumeric(var1) ? var1 : registers[var1]  
-    let val2 = mips.isNumeric(var2) ? var2 : registers[var2] 
+    let val1 = substituteVariable(registers, var1) 
+    let val2 = substituteVariable(registers, var2)
+    if (val2 === null) {
+        return null;
+    }  
     return Math.round(operation(val1, val2))
 }
 
-function changeByOne(conditions, registers, operation) {
+function changeByOne(conditions, registers, operation, output) {
     let line = []
     if (operation.name == 'add') {
         line = conditions[2]
@@ -374,12 +487,16 @@ function changeByOne(conditions, registers, operation) {
     if (line.length != 1) {
         console.log("Error with incrementer in for loop")
     }
+    else if (!Object.prototype.hasOwnProperty.call(registers, line[0])) {
+        undeclaredVariableMessage(line[0], output)
+        return 'quit';
+    }
 
     //The variable is incremented within registers, as is appropriate.
     registers[line[0]] = operation(registers[line[0]], 1)
 }
 
-function changeByMany(conditions, registers, operation) {
+function changeByMany(conditions, registers, operation, output) {
     /*
     Just like before, line becomes an array that contains the words of the third element of conditions, barring "+=".
     This is a key opportunity for code reuse.
@@ -426,14 +543,25 @@ function changeByMany(conditions, registers, operation) {
     
     // Check if we're incrementing by a number or by another variables value
     //As the old comment says, if inc_value is a variable, then its value is substituted in.
-    line[1] = substituteVariable(registers, line[1])
+    let res = substituteVariable(registers, line[1])
+    if (res === null) {
+        undeclaredVariableMessage(line[1], output)
+        return 'quit'
+    }
+
+    line[1] = res
 
     //The addition is performed here.
+
+    if (!Object.prototype.hasOwnProperty.call(registers, line[0])) {
+        undeclaredVariableMessage(line[0], output)
+        return 'quit'
+    }
 
     registers[line[0]] = operation(registers[line[0]], line[1]) // Incrementing conditional value
 }
 
-function branch(conditions, registers, type) {
+function branch(conditions, registers, type, output) {
     /*
     line becomes an array consisting of the words in the second part of the for loop.
     Uncertain why trim() is needed to remove leading and trailing whitespace.
@@ -454,10 +582,21 @@ function branch(conditions, registers, type) {
     */
     console.log(conditions)
     let register = substituteVariable(registers, line[0])
+
+    if (register === null) {
+        undeclaredVariableMessage(line[0], output)
+        return null;
+    }
+
     //operator is set to the second word, which indeed should be an operator.
     let operator = line[1]  // Should be a comparison operator
     //The same operation is done to assign comparator as was done to assign register, except it is done on the third word this time.
     let comparator = substituteVariable(registers, line[2])
+
+    if (comparator === null) {
+        undeclaredVariableMessage(line[2], output)
+        return null;
+    }
     
     /*
     Different calculations are done depending on what the operator is.

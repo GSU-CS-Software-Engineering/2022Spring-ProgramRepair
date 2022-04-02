@@ -1,5 +1,6 @@
 import execute from "./executor.js"
 import { isNumeric } from './mips_instructions.js'
+import Error from './Error.js'
 /*
 The gargantuan function below is in charge of reading over the code line by line, creating instructions and calling the execute function on them.
 We will consider breaking it down into multiple functions to make it more manageable.
@@ -128,7 +129,12 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     Uncertain why this isn't just done with line[1].
                     The instruction's value will be set to the value attribute's value if that is a number, or, if the value attribute's value is the name of a variable in registers, then that variable's value is saved as the instruction's value instead.
                     */
-                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], substituteVariable(registers, value))
+                    let res = substituteVariable(registers, value)
+                    if (res === null) {
+                        undeclaredVariableMessage(value, output)
+                        return;
+                    }
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], res)
                     
                 }
                 // For initializing a variable with the output of an expression e.g. (int a = 2 + 3; int a = b + c..)
@@ -447,13 +453,18 @@ export default function decode(registers, blocks_list, instructions, output) {  
             */
             default:
                 console.log("Couldn't read a keyword")
-                break;
+                undeclaredVariableMessage(keyword, output)
+                return;
             }
 
         //Like the old comment says, this statement keeps a list of instructions.
         instructions.push(instruction) // Keeping log of instructions - not needed honestly
         //The instruction created from the previous case is executed.
-        execute(instruction, registers, output)
+        let res = execute(instruction, registers, output)
+
+        if (res === 'quit') {
+            return;
+        }
     }
 }
 
@@ -565,6 +576,20 @@ function buildPrintInstruction(print_container) {
     return instruction;
 }
 
+export function undeclaredVariableMessage(keyword, output) {
+    output.splice(0, output.length)
+    output.push(new Error("Variable " + keyword + " is undefined.", 'undeclared variable'))
+}
+
 export function substituteVariable(registers, value) {
-    return Object.prototype.hasOwnProperty.call(registers, value) ? registers[value] : value
+    console.log(value)
+    if (isNumeric(value)) {
+        return value;
+    }
+    else if (Object.prototype.hasOwnProperty.call(registers, value)) {
+        return registers[value];
+    }
+    else {
+        return null;
+    }
 }

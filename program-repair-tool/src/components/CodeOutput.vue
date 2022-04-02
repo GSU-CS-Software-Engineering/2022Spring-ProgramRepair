@@ -15,8 +15,8 @@ First is a div that has an attribute called output, which is set to always equal
             I do not understand the deep semantics of this, but it seems to just be a way to identify each entry and works appropriately.
             -->
             <li
-                v-for="entry in output" 
-                :key="entry">
+                v-for="(entry, index) in output" 
+                :key="index">
                 {{ entry }}
             </li>
         </ul>
