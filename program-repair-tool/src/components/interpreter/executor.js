@@ -1,6 +1,6 @@
 import * as mips from './mips_instructions.js'
 import Interpreter from './Interpreter.js';
-import { buildLWInstruction, substituteVariable, undeclaredVariableMessage } from './decoder.js';
+import { buildLWInstruction, substituteVariable, undeclaredVariableMessage, expressionSyntaxMessage, divideByZeroMessage } from './decoder.js';
 import Error from './Error.js'
 // Instructions execute after each instruction is decoded, so it reads and executes code from top to bottom.
 /*
@@ -397,6 +397,11 @@ function evaluateExpression(value, registers, output) {
         }
     }
 
+    if (!/^[\d]+[+\-*\/][\d]+([+\-*\/][\d]+)*$/.test(expression.join(''))) {
+        expressionSyntaxMessage(expression.join(' '), output)
+        return null;
+    }
+
     // Computing mult/div then add/sub
     /*
     The following two loops complete the math expression.
@@ -419,7 +424,12 @@ function evaluateExpression(value, registers, output) {
             expression.splice(--i, 3, new_val)
         }
         else if (x == "/") {
-            let new_val = Math.round(mips.div(expression[i-1], expression[i+1]))
+            let res = mips.div(expression[i-1], expression[i+1]);
+            if (res == "Error: division by zero") {
+                divideByZeroMessage(expression.join(' '), output)
+                return null;
+            }
+            let new_val = Math.round(res)
             expression.splice(--i, 3, new_val)
             
         }

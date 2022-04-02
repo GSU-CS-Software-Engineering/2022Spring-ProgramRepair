@@ -581,6 +581,16 @@ export function undeclaredVariableMessage(keyword, output) {
     output.push(new Error("Variable " + keyword + " is undefined.", 'undeclared variable'))
 }
 
+export function expressionSyntaxMessage(expression, output) {
+    output.splice(0, output.length)
+    output.push(new Error("Expression " + expression + " does not have proper syntax.", 'expression syntax'))
+}
+
+export function divideByZeroMessage(expression, output) {
+    output.splice(0, output.length)
+    output.push(new Error("Expression " + expression + " attempts to divide by zero.", 'divide by zero'))
+}
+
 export function substituteVariable(registers, value) {
     console.log(value)
     if (isNumeric(value)) {

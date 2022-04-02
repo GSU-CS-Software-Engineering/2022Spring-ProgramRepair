@@ -42,6 +42,7 @@ class Problems {
            { name: 'Undeclared Variable In Expressions', prompt: 'Testing an undeclared variable.', code: ['int a = 4;', 'int b = a;', 'System.out.println(a + b);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '8' },
            { name: 'Undeclared Variable For', prompt: 'Testing an undeclared variable.', code: ['int a = 4;', 'int b = 3;', 'int c = 1;','for (int x = a; b > 0; c++) {', 'System.out.println(b);', 'b -= 1;', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '3,2,1' },
            { name: 'Undeclared Variable Nested For', prompt: 'Testing an undeclared variable.', code: ['int z = 1;', 'for (int i = 1; i <= 3; i++) {', 'for (int j = 3; j > 0; j--) {', 'System.out.println(i);', 'System.out.println(j);', 'z += 1', '}', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '1,3,1,2,1,1,2,3,2,2,2,1,3,3,3,2,3,1' },
+           { name: 'Divide by zero', prompt: 'Testing dividing by zero.', code: ['int a = 5 + 9 / 0;', 'System.out.println(a);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '95' },
         ];
     }
 
