@@ -194,7 +194,7 @@ export default function execute(instruction, registers, output) {
             //The interpreter is then run to generate the output of the code within the for loop.
             for_interpreter.run()
             //All of the output generated from the for_interpreter is added to the output of the main interpreter, element by element.
-            if (Object.prototype.hasOwnProperty.call(for_interpreter.output[0], 'errorType')) {
+            if (for_interpreter.output.length > 0 && Object.prototype.hasOwnProperty.call(for_interpreter.output[0], 'errorType')) {
                 output.splice(0, output.length)
                 output.push(for_interpreter.output[0])
                 return 'quit'
@@ -247,7 +247,7 @@ export default function execute(instruction, registers, output) {
         if (res) {
             let if_interpreter = new Interpreter(key.blocks_list, registers)
             if_interpreter.run()
-            if (Object.prototype.hasOwnProperty.call(if_interpreter.output[0], 'errorType')) {
+            if (if_interpreter.output.length > 0 && Object.prototype.hasOwnProperty.call(if_interpreter.output[0], 'errorType')) {
                 output.splice(0, output.length)
                 output.push(if_interpreter.output[0])
                 return 'quit'
@@ -305,7 +305,7 @@ export default function execute(instruction, registers, output) {
     else if (key.func == "else") {
         var else_interpreter = new Interpreter(key.blocks_list, registers)
         else_interpreter.run()
-        if (Object.prototype.hasOwnProperty.call(else_interpreter.output[0], 'errorType')) {
+        if (else_interpreter.output.length > 0 && Object.prototype.hasOwnProperty.call(else_interpreter.output[0], 'errorType')) {
             output.splice(0, output.length)
             output.push(else_interpreter.output[0])
             return 'quit'

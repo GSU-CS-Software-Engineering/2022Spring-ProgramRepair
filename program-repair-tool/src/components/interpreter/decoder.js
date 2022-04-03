@@ -447,6 +447,10 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 instruction = buildPrintInstruction(print_container)
                 break;
 
+            case "}":
+                closingBraceMessage(output)
+                return;
+
             /*
             The following is executed if no previous cases occurred.
             May want to do more than just display a message to the console in this case.
@@ -589,6 +593,11 @@ export function expressionSyntaxMessage(expression, output) {
 export function divideByZeroMessage(expression, output) {
     output.splice(0, output.length)
     output.push(new Error("Expression " + expression + " attempts to divide by zero.", 'divide by zero'))
+}
+
+function closingBraceMessage(output) {
+    output.splice(0, output.length)
+    output.push(new Error("There exists a closing curly bracket that does not match up to an opening curly bracket.", 'closing brace'))
 }
 
 export function substituteVariable(registers, value) {
