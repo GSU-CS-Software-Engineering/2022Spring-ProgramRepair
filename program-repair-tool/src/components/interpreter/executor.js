@@ -1,7 +1,6 @@
 import * as mips from './mips_instructions.js'
 import Interpreter from './Interpreter.js';
-import { buildLWInstruction, substituteVariable, undeclaredVariableMessage, expressionSyntaxMessage, divideByZeroMessage } from './decoder.js';
-import Error from './Error.js'
+import { buildLWInstruction, substituteVariable, undeclaredVariableMessage, expressionSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage } from './decoder.js';
 // Instructions execute after each instruction is decoded, so it reads and executes code from top to bottom.
 /*
 Like the previous comment says, this method is run after each instruction is decoded.
@@ -92,7 +91,8 @@ export default function execute(instruction, registers, output) {
         A new interpreter is created, with the blocks_list set to be the blocks in the for instruction, as these are the blocks that are within the for loop.
         This interpreter will have access to variables that the program already has as well.
         */
-        var for_interpreter = new Interpreter(key.blocks_list, registers)
+        let new_registers = cloneRegisters(registers)
+        var for_interpreter = new Interpreter(key.blocks_list, new_registers)
         /*
         The for_interpreter's conditions are set to the conditions provided in the instruction.
         Uncertain how this is used for now.
@@ -108,6 +108,10 @@ export default function execute(instruction, registers, output) {
         The following creates an instruction where var1 is the variable name and value is what it should be set to, so i and 4 respectively in my previous example.
         It should be noted that this process does not account for a loop that starts like for (; i < 5; i++) {
         */
+        if (Object.prototype.hasOwnProperty.call(new_registers, loop_variable[loop_variable.indexOf("=")-1])) {
+            duplicateDeclarationMessage(loop_variable[loop_variable.indexOf("=")-1], output)
+            return 'quit'
+        }
         let res = substituteVariable(registers, loop_variable[loop_variable.indexOf("=")+1])
         if (res === null) {
             undeclaredVariableMessage(loop_variable[loop_variable.indexOf("=")+1], output)
@@ -190,7 +194,7 @@ export default function execute(instruction, registers, output) {
             This does create some implications when it comes to how variable scope is treated with regards to for loops, we should keep our eyes on that.
             It should be noted that this also leads to a form of recursion, if a nested for loop is found then the for_interpreter will perform this exact same process within itself.
             */
-            for_interpreter = new Interpreter(key.blocks_list, registers)
+            for_interpreter = new Interpreter(key.blocks_list, new_registers)
             //The interpreter is then run to generate the output of the code within the for loop.
             for_interpreter.run()
             //All of the output generated from the for_interpreter is added to the output of the main interpreter, element by element.
@@ -222,6 +226,7 @@ export default function execute(instruction, registers, output) {
         }
         //When a for loop is completed, a message is output to the console.
         console.log("END FOR LOOP")
+        callbackRegisters(registers, new_registers)
 
     }
 
@@ -245,7 +250,8 @@ export default function execute(instruction, registers, output) {
             return 'quit';
         }
         if (res) {
-            let if_interpreter = new Interpreter(key.blocks_list, registers)
+            let new_registers = cloneRegisters(registers)
+            let if_interpreter = new Interpreter(key.blocks_list, new_registers)
             if_interpreter.run()
             if (if_interpreter.output.length > 0 && Object.prototype.hasOwnProperty.call(if_interpreter.output[0], 'errorType')) {
                 output.splice(0, output.length)
@@ -255,6 +261,7 @@ export default function execute(instruction, registers, output) {
             for (let i in if_interpreter.output) {
                 output.push(if_interpreter.output[i])
             }
+            callbackRegisters(registers, new_registers)
             return
         }
         
@@ -303,7 +310,8 @@ export default function execute(instruction, registers, output) {
     This is repetitive, code reuse should be done.
     */
     else if (key.func == "else") {
-        var else_interpreter = new Interpreter(key.blocks_list, registers)
+        let new_registers = cloneRegisters(registers)
+        var else_interpreter = new Interpreter(key.blocks_list, new_registers)
         else_interpreter.run()
         if (else_interpreter.output.length > 0 && Object.prototype.hasOwnProperty.call(else_interpreter.output[0], 'errorType')) {
             output.splice(0, output.length)
@@ -314,6 +322,7 @@ export default function execute(instruction, registers, output) {
             output.push(else_interpreter.output[i])
         }
 
+        callbackRegisters(registers, new_registers)
 
     }
 
@@ -631,4 +640,14 @@ function branch(conditions, registers, type, output) {
 
     }
     
+}
+
+function cloneRegisters(registers) {
+    return JSON.parse(JSON.stringify(registers));
+}
+
+function callbackRegisters(registers, new_registers) {
+    for (const variable in registers) {
+        registers[variable] = new_registers[variable]
+    }
 }

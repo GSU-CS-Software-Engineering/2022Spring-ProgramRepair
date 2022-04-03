@@ -91,6 +91,11 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     */
                     line[1] = clipSemicolon(line[1])
 
+                    if (Object.prototype.hasOwnProperty.call(registers, line[1])) {
+                        duplicateDeclarationMessage(line[1], output)
+                        return
+                    }
+
                     /*
                     The instruction object is populated with attributes and values.
                     lw stands for load word, and can be learned about here: https://www3.ntu.edu.sg/home/smitha/fyp_gerald/lwinstruction.html
@@ -111,6 +116,10 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 Any line with four words that starts with int will be recognized as such, so we need to keep that in mind.
                 */
                 else if (line.length == 4) {
+                    if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
+                        duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
+                        return
+                    }
                     /*
                     The variable val is set to the value the variable is being initialized to.
                     Uncertain why it is done this way as opposed to just "var val = line[3]"
@@ -143,6 +152,10 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 Once again this implies certain assumptions that we should keep in mind.
                 */
                 else if (line.length > 4) {
+                    if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
+                        duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
+                        return
+                    }
                     /*
                     The variable expression is set by first taking only the expression portion of the line using splice, and then eliminating the semicolon from each element if one exists.
                     Once again the instruction is saved with func "lw".
@@ -255,6 +268,11 @@ export default function decode(registers, blocks_list, instructions, output) {  
 
                 let scope = get_stack_scope(kw_vals, "for")
 
+                if (scope === null) {
+                    missingBracketMessage(output)
+                    return
+                }
+
                 /*
                 new_blocks_list will become an array consisting of the lines involved in the for loop.
                 This object's blocks_list will be modified to contain the lines that are not part of the for loop.
@@ -301,6 +319,11 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 conditions = line.split("(")[1].split(")")[0]
 
                 let scopeStats = get_stack_scope(kw_vals, "if")
+
+                if (scopeStats === null) {
+                    missingBracketMessage(output)
+                    return
+                }
 
                 new_blocks_list = blocks_list.splice(scopeStats.start, scopeStats.len + 1)
                 kw_vals.splice(scopeStats.start, scopeStats.len + 1)
@@ -351,6 +374,10 @@ export default function decode(registers, blocks_list, instructions, output) {  
                         conditions = line.split("(")[1].split(")")[0]
                         //The scope object returned by the get_stack_scope method contains the calculated block start, block end, and length of the next block starting with "else", which in this case would be an else-if block.
                         let scope = get_stack_scope(kw_vals, "else")
+                        if (scope === null) {
+                            missingBracketMessage(output)
+                            return
+                        }
                         /*
                         Like before, the blocks_list will now be a version of itself without the else if block lines, as will kw_vals.
                         new_blocks_list will contain the lines of the else if block.
@@ -386,6 +413,10 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     else {
                         // //The scope object returned by the get_stack_scope method contains the calculated block start, block end, and length of the next block starting with "else", which in this case would be an else block.
                         let scope = get_stack_scope(kw_vals, "else")
+                        if (scope === null) {
+                            missingBracketMessage(output)
+                            return
+                        }
                         /*
                         Like before, the blocks_list will now be a version of itself without the else block lines, as will kw_vals.
                         new_blocks_list will contain the lines of the else block.
@@ -448,7 +479,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 break;
 
             case "}":
-                closingBraceMessage(output)
+                closingBracketMessage(output)
                 return;
 
             /*
@@ -513,6 +544,7 @@ function get_stack_scope(kw_vals, keyword) {
 
     if (scope_stack.length > 0 || block_end < 1) {
         console.log("ERROR -> decode -> for -> scope stack")
+        return null
     }
 
     return {
@@ -582,7 +614,7 @@ function buildPrintInstruction(print_container) {
 
 export function undeclaredVariableMessage(keyword, output) {
     output.splice(0, output.length)
-    output.push(new Error("Variable " + keyword + " is undefined.", 'undeclared variable'))
+    output.push(new Error("Variable " + keyword + " is undeclared.", 'undeclared variable'))
 }
 
 export function expressionSyntaxMessage(expression, output) {
@@ -595,9 +627,19 @@ export function divideByZeroMessage(expression, output) {
     output.push(new Error("Expression " + expression + " attempts to divide by zero.", 'divide by zero'))
 }
 
-function closingBraceMessage(output) {
+function closingBracketMessage(output) {
     output.splice(0, output.length)
-    output.push(new Error("There exists a closing curly bracket that does not match up to an opening curly bracket.", 'closing brace'))
+    output.push(new Error("There exists a closing curly bracket that does not match up to an opening curly bracket.", 'closing bracket'))
+}
+
+function missingBracketMessage(output) {
+    output.splice(0, output.length)
+    output.push(new Error("There is a missing closing curly bracket.", 'missing closing bracket'))
+}
+
+export function duplicateDeclarationMessage(variable, output) {
+    output.splice(0, output.length)
+    output.push(new Error("Variable " + variable + " was already declared.", 'duplicate declaration'))
 }
 
 export function substituteVariable(registers, value) {

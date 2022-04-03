@@ -39,10 +39,12 @@ class Problems {
            { name: 'Nested If Statement 3', prompt: 'Testing nested if statement.', code: ['int i = 6;', 'if (i <= 5) {', 'if (i == 5) {', 'System.out.println("Equals five!");', '}', 'else {', 'System.out.println("Less than five!");', '}', '}', 'else {', 'System.out.println("Greater than five!);', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Greater than five!' },
            { name: 'Nested For Loop', prompt: 'Testing nested for loop.', code: ['for (int i = 1; i <= 3; i++) {', 'for (int j = 3; j > 0; j--) {', 'System.out.println(i);', 'System.out.println(j);', '}', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '1,3,1,2,1,1,2,3,2,2,2,1,3,3,3,2,3,1' },
            { name: 'Undeclared Variable', prompt: 'Testing an undeclared variable.', code: ['int a;', 'a = 3 + 4;', 'System.out.println(a);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '7' },
-           { name: 'Undeclared Variable In Expressions', prompt: 'Testing an undeclared variable.', code: ['int a = 4;', 'int b = a;', 'System.out.println(a + b);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '8' },
+           { name: 'Undeclared Variable In Expressions', prompt: 'Testing an undeclared variable.', code: ['System.out.print("Test!");', 'int a = 4;', 'int b = a;', 'System.out.println(a + b);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Test!,8' },
            { name: 'Undeclared Variable For', prompt: 'Testing an undeclared variable.', code: ['int a = 4;', 'int b = 3;', 'int c = 1;','for (int x = a; b > 0; c++) {', 'System.out.println(b);', 'b -= 1;', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '3,2,1' },
            { name: 'Undeclared Variable Nested For', prompt: 'Testing an undeclared variable.', code: ['int z = 1;', 'for (int i = 1; i <= 3; i++) {', 'for (int j = 3; j > 0; j--) {', 'System.out.println(i);', 'System.out.println(j);', 'z += 1', '}', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '1,3,1,2,1,1,2,3,2,2,2,1,3,3,3,2,3,1' },
            { name: 'Divide by zero', prompt: 'Testing dividing by zero.', code: ['int a = 5 + 9 / 0;', 'System.out.println(a);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '95' },
+           { name: 'Duplicate Declaration Test', prompt: 'Testing duplicate declaration.', code: ['int a = 5;', 'for (int a = 0; a < 4; a++) {', 'System.out.println(a);', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '0,1,2,3' },
+           { name: 'Missing bracket test', prompt: 'Testing missing bracket.', code: ['for (int a = 0; a < 4; a++) {', 'System.out.println(a);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '0,1,2,3' },
         ];
     }
 
