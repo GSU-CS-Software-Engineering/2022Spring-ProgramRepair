@@ -23,7 +23,7 @@ Below is the template for this component.
             In effect this creates the blocks for each element inside the code array.
            unexpected mutatation of problem prop line 33
             -->
-            <draggable v-model="items" transition="100" class="drop-zone">
+            <draggable v-model="problem.code" transition="100" class="drop-zone">
                 <template v-slot:item="{ item }">
                     <div class="draggable-item">
                         {{ item }}
@@ -50,7 +50,7 @@ import Draggable from 'vue3-draggable'
 Unsure why an asterisk was needed to import from Interpreter.js, importing semantics can be looked up if needed.
 n: it seems that the asterisk imports everything from the file instead of designated portions. This is a wildcard import. Not recommended generally but still used.https://rules.sonarsource.com/javascript/RSPEC-2208
 */
-import * as Interpreter from "./interpreter/Interpreter.js"
+import Interpreter from "./interpreter/Interpreter.js"
 
 export default {
     //Draggable is registered as a component, which allows it to be used in the template above.
@@ -66,7 +66,6 @@ export default {
     data() {
         return {
             output: String,
-            items: []
         };
     },
     methods: {
@@ -81,13 +80,13 @@ export default {
             //A variable is created in order to store the string representation of the code the user has put together.
             var blocks_list = ''
             //For each element in the problem's code, its content followed by a new line is appended to the blocks_list variable.
-            this.$data.items.forEach(x => {
+            this.$props.problem.code.forEach(x => {
                 blocks_list += `${x}\n`
             })
             let undefined;  // constructor requires two arguments and has checks for undefined
             //An instance of the interpreter is created and run with the code.
             //The semantics of how it is created can be checked when we look at the interpreter code.
-            let i = new Interpreter.Interpreter(blocks_list, undefined)
+            let i = new Interpreter(blocks_list, undefined)
             i.run()
             
             // Submitting output for rendering to STDOUT
