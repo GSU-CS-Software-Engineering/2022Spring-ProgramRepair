@@ -33,6 +33,8 @@ The template has a div that holds all of the HTML content.
             Blocks can be dragged around within the workspace section or outside of it to place them back into the inventory section.
             <br />
             When you are done constructing your solution, click the Run button to check your answer.
+             <br />
+            The Clear button will remove all blocks from your workspace, and the Clear Console button will empty the output in the console.
         </p>
         <hr />
         <!--
