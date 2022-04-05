@@ -39,7 +39,7 @@ Below is the template for this component.
         Below are two buttons, when the run button is clicked the run method will run, and when the clear console button is clicked the clearConsole method will run.
         -->
         <div>
-            <button class="button" @click="run">Run</button>
+            <button id="runBtn" class="button" @click="run">Run</button>
             <button class="button" @click="clearConsole">Clear Console</button>
             <button class="button" @click="returnHome">Home</button>
         </div>
@@ -76,6 +76,7 @@ export default {
         It is aynchronous, so while statements will be executed in sequence, the function will not wait for a statement to finish executing before proceeding to the next one.
         */
         async run() {
+            document.getElementById("runBtn").disabled = true
             //Unsure of why the console is cleared, may want to change that.
             console.clear()
             // Converting drag/drop components to strings, then running through interpreter
@@ -127,6 +128,9 @@ export default {
             else {
                 alert("Try Again. You can do this!")
             }
+
+            document.getElementById("runBtn").disabled = false
+
             },
 
         //This function fires a clearConsole event with no data.
