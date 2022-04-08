@@ -128,7 +128,7 @@ export default {
                     position:"top", 
                     duration:1500,
                 });
-                toaster.show(`Correct`);
+                toaster.show(`Congratulations! You're correct!`);
             }
             //If the problem's answer does not match the output array, the code is marked as incorrect.
             else {
@@ -137,7 +137,7 @@ export default {
                     position:"top", 
                     duration:1500 
                 });
-                toaster.show(`Incorrect`);
+                toaster.show(`Try Again. You can do this!`);
             }
 
             //Loading spinner
