@@ -31,21 +31,28 @@ Below is the template for this component.
                 </template>
             </draggable>
         </div>
-        <!--
-        Below are two buttons, when the run button is clicked the run method will run, and when the clear console button is clicked the clearConsole method will run.
-        -->
+
         <div>
             <button class="button" @click="returnHome">Home</button>
             <button class="button" @click="clearWorkspace">Clear</button>
             <button class="button" @click="clearConsole">Clear Console</button>
-            <button class="button" @click="run">Run</button>
-
+            <button class="button" @click="run">
+                <div v-if="loading" class="spinner-border" role="status"></div>
+                <span v-if="loading" class="sr-only">Loading...</span>
+                <span v-else >Run</span>
+            </button>
+            
         </div>
     </div>
+
+
 </template>
+
 
 <script>
 import Draggable from 'vue3-draggable'
+import { createToaster } from "@meforma/vue-toaster";
+
 /*
 Unsure why an asterisk was needed to import from Interpreter.js, importing semantics can be looked up if needed.
 n: it seems that the asterisk imports everything from the file instead of designated portions. This is a wildcard import. Not recommended generally but still used.https://rules.sonarsource.com/javascript/RSPEC-2208
@@ -65,8 +72,9 @@ export default {
     //This component has one data attribute named output which is a String.
     data() {
         return {
-            items: [],
             output: String,
+            items: [],
+            loading:false
         };
     },
     methods: {
@@ -87,7 +95,7 @@ export default {
             let undefined;  // constructor requires two arguments and has checks for undefined
             //An instance of the interpreter is created and run with the code.
             //The semantics of how it is created can be checked when we look at the interpreter code.
-            let i = new Interpreter(blocks_list, undefined)
+            let i = new Interpreter.Interpreter(blocks_list, undefined)
             i.run()
             
             // Submitting output for rendering to STDOUT
@@ -115,12 +123,29 @@ export default {
             */
             if(cur_problem.answer == output_array) {
                 console.log("VALID")
-                alert("Congratulations! You're correct!")
+                const toaster = createToaster({ 
+                    type: "success",
+                    position:"top", 
+                    duration:1500,
+                });
+                toaster.show(`Correct`);
             }
             //If the problem's answer does not match the output array, the code is marked as incorrect.
             else {
-                alert("Try Again. You can do this!")
+                const toaster = createToaster({ 
+                    type: "error",
+                    position:"top", 
+                    duration:1500 
+                });
+                toaster.show(`Incorrect`);
             }
+
+            //Loading spinner
+            this.loading=!false
+            setTimeout(()=>{
+                this.loading=!true
+            },1000)
+
         },
 
         //This function fires a clearConsole event with no data.
@@ -128,7 +153,7 @@ export default {
             this.$emit("clearConsole")
         },
         returnHome() { //Alert message when user uses 'Home' button & there is an item in the workspace
-            if (this.$props.problem.code.length == 0) {
+            if (this.$data.items.length > 0) {
                 if (window.confirm("Are you sure you want to return home?\nProgress may be lost")) {
                     window.location.replace('http://localhost:8080');
                 }
@@ -162,11 +187,11 @@ export default {
                 }
             }
             this.reload();
-        }
+        } 
     },
 };
 
-/* (WIP) To ensure user doesn't close Tab or Window (Impacts all changes within the website, fixable by using window.onbeforeunload = null but unsure if needed)
+/*To ensure user doesn't close Tab or Window (Impacts all changes within the website, fixable by using window.onbeforeunload = null but unsure if needed)
     window.onbeforeunload = function (e) {
         e = e || window.event;
 
@@ -179,6 +204,9 @@ export default {
         return 'Any string';
     };
 */
+
+
+
 </script>
 
 <!--
