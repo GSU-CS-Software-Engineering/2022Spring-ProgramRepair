@@ -50,7 +50,7 @@ import Draggable from 'vue3-draggable'
 Unsure why an asterisk was needed to import from Interpreter.js, importing semantics can be looked up if needed.
 n: it seems that the asterisk imports everything from the file instead of designated portions. This is a wildcard import. Not recommended generally but still used.https://rules.sonarsource.com/javascript/RSPEC-2208
 */
-import * as Interpreter from "./interpreter/Interpreter.js"
+import Interpreter from "./interpreter/Interpreter.js"
 
 export default {
     //Draggable is registered as a component, which allows it to be used in the template above.
