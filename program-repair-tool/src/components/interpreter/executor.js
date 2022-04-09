@@ -1,6 +1,6 @@
 import * as mips from './mips_instructions.js'
 import Interpreter from './Interpreter.js';
-import { buildLWInstruction, substituteVariable, undeclaredVariableMessage, expressionSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage, alterConstantMessage } from './decoder.js';
+import { buildLWInstruction, substituteVariable, uninitializedVariableMessage, expressionSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage, alterConstantMessage, invalidIntMessage } from './decoder.js';
 import Register from './Register.js';
 // Instructions execute after each instruction is decoded, so it reads and executes code from top to bottom.
 /*
@@ -12,6 +12,16 @@ export default function execute(instruction, registers, output) {
     let key = instruction
     //The following is done if func is "lw".
     if (key.func == "lw") {         // Loading value to registers
+
+        if (key.type === null && ['final int', 'final double'].includes(registers[key.var1].type) && registers[key.var1].value !== null) {
+            alterConstantMessage(key.var1, output)
+            return 'quit';
+        }
+
+        if (key.type === null) {
+            key.type = registers[key.var1].type
+        }
+
         let value = null
         //If key has a numeric value, set the variable in registers with the same name as key's var1 to equal key's value.
         if (mips.isNumeric(key.value)) {
@@ -44,24 +54,21 @@ export default function execute(instruction, registers, output) {
             value = null
         }
 
-        registers[key.var1]
-
-        if (Object.prototype.hasOwnProperty.call(registers, key.var1) && ['final int'].includes(registers[key.var1].type)) {
-            alterConstantMessage(key.var1, output)
-            return 'quit';
+        if (['int', 'final int'].includes(key.type)) {
+            if (!validateInt(value)) {
+                invalidIntMessage(key.var1, value, output)
+                return 'quit'
+            }
         }
 
-        let type = null
-
-        if (key.constant) {
-            type = 'final int'
+        if (['double', 'final double'].includes(key.type)) {
+            if (!mips.isNumeric(value)) {
+                invalidDoubleMessage(key.var1, value, output)
+                return 'quit'
+            }
         }
 
-        else {
-            type = 'int'
-        }
-
-        registers[key.var1] = new Register(type, value)
+        registers[key.var1] = new Register(key.type, value)
 
     }
     /*
@@ -70,55 +77,101 @@ export default function execute(instruction, registers, output) {
     A lot of this execution code appears redundant and in need of reworking.
     */
     else if (key.func == "add") {  // Flexible addition for both integer vals and variable vals
-        if (['final int'].includes(registers[key.reg_val].type)) {
+        if (['final int', 'final double'].includes(registers[key.reg_val].type)) {
             alterConstantMessage(key.reg_val, output)
             return 'quit';
         }
         let res = performMathOp(registers, key.var1, key.var2, mips.add)
         if (res === null) {
-            undeclaredVariableMessage(key.var2, output)
+            uninitializedVariableMessage(key.var2, output)
             return 'quit';
         }
-        registers[key.reg_val] = new Register('int', res)
+        if (registers[key.reg_val].type == 'int' && !validateInt(res)) {
+            invalidIntMessage(key.reg_val, output)
+            return 'quit';
+        }
+        if (registers[key.reg_val].type == 'double' && !mips.isNumeric(res)) {
+            invalidDoubleMessage(key.reg_val, output)
+            return 'quit';
+        }
+        registers[key.reg_val] = new Register(registers[key.reg_val].type, res)
     }
     //The following is analogous to "addi". Roughly the same comments apply.
     else if (key.func == "sub") {  // Flexible subtraction for both integer vals and variable vals
-        if (['final int'].includes(registers[key.reg_val].type)) {
+        if (['final int', 'final double'].includes(registers[key.reg_val].type)) {
             alterConstantMessage(key.reg_val, output)
             return 'quit';
         }              
         let res = performMathOp(registers, key.var1, key.var2, mips.sub)
         if (res === null) {
-            undeclaredVariableMessage(key.var2, output)
+            uninitializedVariableMessage(key.var2, output)
             return 'quit';
         }
-        registers[key.reg_val] = new Register('int', res)
+        if (registers[key.reg_val].type == 'int' && !validateInt(res)) {
+            invalidIntMessage(key.reg_val, output)
+            return 'quit';
+        }
+        if (registers[key.reg_val].type == 'double' && !mips.isNumeric(res)) {
+            invalidDoubleMessage(key.reg_val, output)
+            return 'quit';
+        }
+        registers[key.reg_val] = new Register(registers[key.reg_val].type, res)
     }
     //The following is analogous to "addi" and "subi". Roughly the same comments apply.
     else if (key.func == "mult") {  // Flexible multiplication
-        if (['final int'].includes(registers[key.reg_val].type)) {
+        if (['final int', 'final double'].includes(registers[key.reg_val].type)) {
             alterConstantMessage(key.reg_val, output)
             return 'quit';
         }
         let res = performMathOp(registers, key.var1, key.var2, mips.mult)
         if (res === null) {
-            undeclaredVariableMessage(key.var2, output)
+            uninitializedVariableMessage(key.var2, output)
             return 'quit';
         }
-        registers[key.reg_val] = new Register('int', res)
+        if (registers[key.reg_val].type == 'int' && !validateInt(res)) {
+            invalidIntMessage(key.reg_val, output)
+            return 'quit';
+        }
+        if (registers[key.reg_val].type == 'double' && !mips.isNumeric(res)) {
+            invalidDoubleMessage(key.reg_val, output)
+            return 'quit';
+        }
+        registers[key.reg_val] = new Register(registers[key.reg_val].type, res)
     }
     //The following is analogous to "addi", "subi", and "mult". Roughly the same comments apply.
     else if (key.func == "div") {   // Flexible divison
-        if (['final int'].includes(registers[key.reg_val].type)) {
+        if (['final int', 'final double'].includes(registers[key.reg_val].type)) {
             alterConstantMessage(key.reg_val, output)
             return 'quit';
         }
         let res = performMathOp(registers, key.var1, key.var2, mips.div)
         if (res === null) {
-            undeclaredVariableMessage(key.var2, output)
+            uninitializedVariableMessage(key.var2, output)
             return 'quit';
         }
-        registers[key.reg_val] = new Register('int', res)
+        else if (res === "Error: division by zero") {
+            divideByZeroMessage(key.reg_val + " /= 0", output)
+            return 'quit';
+        }
+
+        let secondInt = false
+
+        if ((Object.prototype.hasOwnProperty.call(registers, key.var2) && registers[key.var2].type == 'int') || (!Object.prototype.hasOwnProperty.call(registers, key.var2) && validateInt(key.var2))) {
+            secondInt = true
+        }
+        if (registers[key.reg_val].type == 'int' && secondInt) {
+            Math.floor(res)
+        }
+
+        if (registers[key.reg_val].type == 'int' && !validateInt(res)) {
+            invalidIntMessage(key.reg_val, output)
+            return 'quit';
+        }
+        if (registers[key.reg_val].type == 'double' && !mips.isNumeric(res)) {
+            invalidDoubleMessage(key.reg_val, output)
+            return 'quit';
+        }
+        registers[key.reg_val] = new Register(registers[key.reg_val].type, res)
     }
     //There is a desperate need for code reuse with the above code pieces.
 
@@ -151,10 +204,10 @@ export default function execute(instruction, registers, output) {
         }
         let res = substituteVariable(registers, loop_variable[loop_variable.indexOf("=")+1])
         if (res === null) {
-            undeclaredVariableMessage(loop_variable[loop_variable.indexOf("=")+1], output)
+            uninitializedVariableMessage(loop_variable[loop_variable.indexOf("=")+1], output)
             return 'quit'
         }
-        instruction = buildLWInstruction(loop_variable[loop_variable.indexOf("=")-1], res, false)
+        instruction = buildLWInstruction(loop_variable[loop_variable.indexOf("=")-1], res, 'int')
 
         //This line executes the instruction, therefore setting the value to the variable in registers.
         for_interpreter.execute(instruction) // Loading looping variable to a register
@@ -407,7 +460,7 @@ export default function execute(instruction, registers, output) {
         } 
 
         else {
-            undeclaredVariableMessage(key.value, output)
+            uninitializedVariableMessage(key.value, output)
             return 'quit';
         }
 
@@ -429,24 +482,40 @@ function evaluateExpression(value, registers, output) {
     */
 
     let expression = []
+    let types = []
 
     for (let i = 0; i < value.length; i++) {
-        if (['+', '-', '*', '/', '='].includes(value[i])) {
+        if (['+', '-', '*', '/'].includes(value[i])) {
             expression.push(value[i])
+            types.push(value[i])
         }
         else {
 
             let res = substituteVariable(registers, value[i])
             if (res == null) {
 
-                undeclaredVariableMessage(value[i], output)
+                uninitializedVariableMessage(value[i], output)
                 return null
+            }
+            if (Object.prototype.hasOwnProperty.call(registers, value[i])) {
+                if (['int', 'final int'].includes(registers[value[i]].type)) {
+                    types.push('int')
+                }
+                else if (['double', 'final double'].includes(registers[value[i]].type)) {
+                    types.push('double')
+                }
+            }
+            else if (validateInt(res)) {
+                types.push('int')
+            }
+            else if (mips.isNumeric(res)) {
+                types.push('double')
             }
             expression.push(res)
         }
     }
 
-    if (!/^[\d]+[+\-*\/][\d]+([+\-*\/][\d]+)*$/.test(expression.join(''))) {
+    if (!/^[\d]+(\.[\d]+)?[+\-*\/][\d]+(\.[\d]+)?([+\-*\/][\d]+(\.[\d]+)?)*$/.test(expression.join(''))) {
         expressionSyntaxMessage(expression.join(' '), output)
         return null;
     }
@@ -469,8 +538,16 @@ function evaluateExpression(value, registers, output) {
         Potential for code reuse.
         */
         if (x == "*") {
-            let new_val = Math.round(mips.mult(expression[i-1], expression[i+1]))
+            let new_val = mips.mult(expression[i-1], expression[i+1])
+            let first = types[i-1]
+            let second = types[i+1]
             expression.splice(--i, 3, new_val)
+            if (first === 'int' && second === 'int') {
+                types.splice(i, 3, 'int')
+            }
+            else {
+                types.splice(i, 3, 'double')
+            }
         }
         else if (x == "/") {
             let res = mips.div(expression[i-1], expression[i+1]);
@@ -478,7 +555,18 @@ function evaluateExpression(value, registers, output) {
                 divideByZeroMessage(expression.join(' '), output)
                 return null;
             }
-            let new_val = Math.round(res)
+            let first = types[i-1]
+            let second = types[i+1]
+            if (first === 'int' && second === 'int') {
+                types.splice(i, 3, 'int')
+                res = Math.floor(res)
+            }
+            else {
+                types.splice(i, 3, 'double')
+            }
+
+            let new_val = res
+
             expression.splice(--i, 3, new_val)
             
         }
@@ -487,11 +575,11 @@ function evaluateExpression(value, registers, output) {
     for (let i = 0; i < expression.length; i++) {
         let x = expression[i]
         if (x == "+") {
-            let new_val = Math.round(mips.add(expression[i-1], expression[i+1]))
+            let new_val = mips.add(expression[i-1], expression[i+1])
             expression.splice(--i, 3, new_val)
         }
         else if (x == "-") {
-            let new_val = Math.round(mips.sub(expression[i-1], expression[i+1]))
+            let new_val = mips.sub(expression[i-1], expression[i+1])
             expression.splice(--i, 3, new_val)
         } 
     }
@@ -517,7 +605,7 @@ function performMathOp(registers, var1, var2, operation) {
     if (val2 === null) {
         return null;
     }  
-    return Math.round(operation(val1, val2))
+    return operation(val1, val2)
 }
 
 function changeByOne(conditions, registers, operation, output) {
@@ -547,10 +635,10 @@ function changeByOne(conditions, registers, operation, output) {
         console.log("Error with incrementer in for loop")
     }
     else if (!Object.prototype.hasOwnProperty.call(registers, line[0])) {
-        undeclaredVariableMessage(line[0], output)
+        uninitializedVariableMessage(line[0], output)
         return 'quit';
     }
-    else if (['final int'].includes(registers[line[0]].type)) {
+    else if (['final int', 'final double'].includes(registers[line[0]].type)) {
         alterConstantMessage(line[0], output)
         return 'quit';
     }
@@ -608,7 +696,7 @@ function changeByMany(conditions, registers, operation, output) {
     //As the old comment says, if inc_value is a variable, then its value is substituted in.
     let res = substituteVariable(registers, line[1])
     if (res === null) {
-        undeclaredVariableMessage(line[1], output)
+        uninitializedVariableMessage(line[1], output)
         return 'quit'
     }
 
@@ -617,15 +705,43 @@ function changeByMany(conditions, registers, operation, output) {
     //The addition is performed here.
 
     if (!Object.prototype.hasOwnProperty.call(registers, line[0])) {
-        undeclaredVariableMessage(line[0], output)
+        uninitializedVariableMessage(line[0], output)
         return 'quit'
     }
-    else if (['final int'].includes(registers[line[0]].type)) {
+    else if (['final int', 'final double'].includes(registers[line[0]].type)) {
         alterConstantMessage(line[0], output)
         return 'quit';
     }
 
-    registers[line[0]] = new Register('int', operation(registers[line[0]].value, line[1])) // Incrementing conditional value
+    let value = operation(registers[line[0]].value, line[1])
+
+    if (value === "Error: division by zero") {
+        divideByZeroMessage(line[0] + " /= 0", output)
+        return 'quit';
+    }
+
+    if (operation.name == 'div') {
+        let secondInt = false
+
+        if ((Object.prototype.hasOwnProperty.call(registers, line[1]) && registers[line[1]].type == 'int') || (!Object.prototype.hasOwnProperty.call(registers, line[1]) && validateInt(line[1]))) {
+            secondInt = true
+        }
+        if (registers[line[0]].type == 'int' && secondInt) {
+            Math.floor(value)
+        }
+    }
+
+    if (registers[line[0]].type == 'int' && !validateInt(value)) {
+        invalidIntMessage(line[0], output)
+        return 'quit';
+    }
+    if (registers[line[0]].type == 'double' && !mips.isNumeric(value)) {
+        invalidDoubleMessage(line[0], output)
+        return 'quit';
+    }
+
+
+    registers[line[0]] = new Register(registers[line[0]].type, value) // Incrementing conditional value
 }
 
 function branch(conditions, registers, type, output) {
@@ -651,7 +767,7 @@ function branch(conditions, registers, type, output) {
     let register = substituteVariable(registers, line[0])
 
     if (register === null) {
-        undeclaredVariableMessage(line[0], output)
+        uninitializedVariableMessage(line[0], output)
         return null;
     }
 
@@ -661,7 +777,7 @@ function branch(conditions, registers, type, output) {
     let comparator = substituteVariable(registers, line[2])
 
     if (comparator === null) {
-        undeclaredVariableMessage(line[2], output)
+        uninitializedVariableMessage(line[2], output)
         return null;
     }
 
@@ -699,5 +815,14 @@ function cloneRegisters(registers) {
 function callbackRegisters(registers, new_registers) {
     for (const variable in registers) {
         registers[variable].value = new_registers[variable].value
+    }
+}
+
+function validateInt(input) {
+    if (/^-?[\d]+$/.test(input)) {
+        return true
+    }
+    else {
+        return false
     }
 }

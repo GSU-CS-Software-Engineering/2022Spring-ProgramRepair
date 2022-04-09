@@ -116,7 +116,16 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     That is also done very frequently, should maybe do some code reuse.
                     */
 
-                    instruction = buildLWInstruction(line[1], line[1], constant)
+                    let type = null
+
+                    if (constant) {
+                        type = 'final int'
+                    }
+                    else {
+                        type = 'int'
+                    }
+
+                    instruction = buildLWInstruction(line[1], line[1], type)
      
                 }
                 // For initializing a variable e.g. (int a = 5;)
@@ -149,10 +158,20 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     */
                     let res = substituteVariable(registers, value)
                     if (res === null) {
-                        undeclaredVariableMessage(value, output)
+                        uninitializedVariableMessage(value, output)
                         return;
                     }
-                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], res, constant)
+
+                    let type = null
+
+                    if (constant) {
+                        type = 'final int'
+                    }
+                    else {
+                        type = 'int'
+                    }
+
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], res, type)
                     
                 }
                 // For initializing a variable with the output of an expression e.g. (int a = 2 + 3; int a = b + c..)
@@ -174,7 +193,16 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     let expression = line.splice(3,line.length-3);
                     expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
 
-                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression, constant)
+                    let type = null
+
+                    if (constant) {
+                        type = 'final int'
+                    }
+                    else {
+                        type = 'int'
+                    }
+
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression, type)
 
                 }
                 break;
@@ -184,6 +212,128 @@ export default function decode(registers, blocks_list, instructions, output) {  
             This keyword should not exist in normal Java code, rather it is set as the keyword on line 122 if this line begins with a variable name that exists as a variable within registers.
             The error case of a variable being set to a value when it has not yet been declared does not seem to be handled in this program, though to be fair it would not be handled at this time.
             */
+
+            case "double":
+                if (line.length == 2 && !isNumeric(line[1])) {
+                    /*
+                    This statement slices off the semicolon from the end of the second element if it exists within it.
+                    This selection statement may not be needed for our project, since our code blocks will likely have semicolons whenever appropriate.
+                    This type of statement is done a lot within the code, so I won't repeat this, but it should be done differently.
+                    indexOf will return -1 if the substring does not exist within the String, not 0.
+                    It returning 0 would indicate that a semicolon exists at the beginning of the String, which would be odd but is still a case.
+                    Instead the includes method should be used for this.
+                    See here: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/includes
+                    */
+                    line[1] = clipSemicolon(line[1])
+
+                    if (Object.prototype.hasOwnProperty.call(registers, line[1])) {
+                        duplicateDeclarationMessage(line[1], output)
+                        return
+                    }
+
+                    /*
+                    The instruction object is populated with attributes and values.
+                    lw stands for load word, and can be learned about here: https://www3.ntu.edu.sg/home/smitha/fyp_gerald/lwinstruction.html
+                    This doesn't seem to exactly be loading a word from anywhere, as a variable is just being declared.
+                    In fact, a variable being just declared does nothing in execution, but should affect decoding somehow to keep track of what variables there are.
+                    var1 contains the name of the variable being declared.
+                    Uncertain why there is a value attribute when there is no value in this situation, a variable is just being declared.
+                    Also uncertain why a semicolon is sought and eliminated if it exists from the second element in the line when this was already done previously.
+                    That is also done very frequently, should maybe do some code reuse.
+                    */
+
+                    let type = null
+
+                    if (constant) {
+                        type = 'final double'
+                    }
+                    else {
+                        type = 'double'
+                    }
+
+                    instruction = buildLWInstruction(line[1], line[1], type)
+     
+                }
+                // For initializing a variable e.g. (int a = 5;)
+                /* 
+                The following is executed if this is an int variable being declared and initialized to a value.
+                Any line with four words that starts with int will be recognized as such, so we need to keep that in mind.
+                */
+                else if (line.length == 4) {
+                    if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
+                        duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
+                        return
+                    }
+                    /*
+                    The variable val is set to the value the variable is being initialized to.
+                    Uncertain why it is done this way as opposed to just "var val = line[3]"
+                    This way of doing things makes implicit some assumptions about the code, assumptions we need to be aware of.
+                    */
+                    var val = line[line.indexOf("=") + 1]
+                    /*
+                    The variable value is set to val with its semicolon eliminated if it has one, or just val if it does not.
+                    Uncertain why the variable val was not reused here.
+                    */
+                    var value = clipSemicolon(val)
+                    /*
+                    Once again the instruction is given the func value "lw", which is a bit of a misnomer, actually.
+                    (Well, maybe not. I am a bit sleep deprived and what's important is how it works.)
+                    var1 is set to the name of the variable, which precedes the = sign.
+                    Uncertain why this isn't just done with line[1].
+                    The instruction's value will be set to the value attribute's value if that is a number, or, if the value attribute's value is the name of a variable in registers, then that variable's value is saved as the instruction's value instead.
+                    */
+                    let res = substituteVariable(registers, value)
+                    if (res === null) {
+                        uninitializedVariableMessage(value, output)
+                        return;
+                    }
+
+                    let type = null
+
+                    if (constant) {
+                        type = 'final double'
+                    }
+                    else {
+                        type = 'double'
+                    }
+
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], res, type)
+                    
+                }
+                // For initializing a variable with the output of an expression e.g. (int a = 2 + 3; int a = b + c..)
+                /*
+                The following is executed if a variable is being declared and initialized to the value of an expression.
+                Once again this implies certain assumptions that we should keep in mind.
+                */
+                else if (line.length > 4) {
+                    if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
+                        duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
+                        return
+                    }
+                    /*
+                    The variable expression is set by first taking only the expression portion of the line using splice, and then eliminating the semicolon from each element if one exists.
+                    Once again the instruction is saved with func "lw".
+                    The instruction's var1 will be the variable name, though I am uncertain why it isn't just selected with line[1].
+                    The value of the instruction will be the expression. Will check on how this is used later.
+                    */
+                    let expression = line.splice(3,line.length-3);
+                    expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
+
+                    let type = null
+
+                    if (constant) {
+                        type = 'final double'
+                    }
+                    else {
+                        type = 'double'
+                    }
+
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression, type)
+
+                }
+
+                break;
+
 
             case "variable": // (c = a + b +....(+-*/))
                 /*
@@ -197,7 +347,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 if (line.length > 3) {
                     let expression = line.splice(2,line.length-2)
                     expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
-                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression, constant)
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression, null)
                 }
                 /*
                 Otherwise, if the line is three words long and has the word "+=" that is not at the beginning, the following is done.
@@ -497,7 +647,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
             */
             default:
                 console.log("Couldn't read a keyword")
-                undeclaredVariableMessage(keyword, output)
+                uninitializedVariableMessage(keyword, output)
                 return;
             }
 
@@ -568,12 +718,12 @@ function clipSemicolon(word) {
     return word
 }
 
-export function buildLWInstruction(var1, value, constant) {
+export function buildLWInstruction(var1, value, type) {
     let instruction = {
         func: "lw",      
         var1: var1,
         value: value,
-        constant: constant      
+        type: type   
     };
     return instruction;
 }
@@ -622,9 +772,9 @@ function buildPrintInstruction(print_container) {
     return instruction;
 }
 
-export function undeclaredVariableMessage(keyword, output) {
+export function uninitializedVariableMessage(keyword, output) {
     output.splice(0, output.length)
-    output.push(new Error("Variable " + keyword + " is undeclared.", 'undeclared variable'))
+    output.push(new Error("Variable " + keyword + " is uninitialized.", 'uninitialized variable'))
 }
 
 export function expressionSyntaxMessage(expression, output) {
@@ -655,6 +805,16 @@ export function duplicateDeclarationMessage(variable, output) {
 export function alterConstantMessage(variable, output) {
     output.splice(0, output.length)
     output.push(new Error("Variable " + variable + " is a constant and cannot be altered.", 'alter constant'))
+}
+
+export function invalidIntMessage(variable, value, output) {
+    output.splice(0, output.length)
+    output.push(new Error("Variable " + variable + " is an integer and cannot be assigned the value " + value, 'invalid int'))
+}
+
+export function invalidDoubleMessage(variable, value, output) {
+    output.splice(0, output.length)
+    output.push(new Error("Variable " + variable + " is a double and cannot be assigned the value " + value, 'invalid double'))
 }
 
 export function substituteVariable(registers, value) {
