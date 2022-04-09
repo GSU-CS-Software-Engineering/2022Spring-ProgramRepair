@@ -1,6 +1,6 @@
 import * as mips from './mips_instructions.js'
 import Interpreter from './Interpreter.js';
-import { buildLWInstruction, substituteVariable, undeclaredVariableMessage, expressionSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage } from './decoder.js';
+import { buildLWInstruction, substituteVariable, undeclaredVariableMessage, expressionSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage, alterConstantMessage } from './decoder.js';
 import Register from './Register.js';
 // Instructions execute after each instruction is decoded, so it reads and executes code from top to bottom.
 /*
@@ -12,9 +12,10 @@ export default function execute(instruction, registers, output) {
     let key = instruction
     //The following is done if func is "lw".
     if (key.func == "lw") {         // Loading value to registers
+        let value = null
         //If key has a numeric value, set the variable in registers with the same name as key's var1 to equal key's value.
         if (mips.isNumeric(key.value)) {
-            registers[key.var1] = new Register('int', key.value)
+           value = key.value
         }
         
 
@@ -35,13 +36,32 @@ export default function execute(instruction, registers, output) {
                 return 'quit'
             }
         
-            registers[key.var1] = new Register('int', res)
+            value = res
 
         } 
 
         else if (key.value.length == 1) {
-            registers[key.var1] = new Register('int', null)
+            value = null
         }
+
+        registers[key.var1]
+
+        if (Object.prototype.hasOwnProperty.call(registers, key.var1) && ['final int'].includes(registers[key.var1].type)) {
+            alterConstantMessage(key.var1, output)
+            return 'quit';
+        }
+
+        let type = null
+
+        if (key.constant) {
+            type = 'final int'
+        }
+
+        else {
+            type = 'int'
+        }
+
+        registers[key.var1] = new Register(type, value)
 
     }
     /*
@@ -50,6 +70,10 @@ export default function execute(instruction, registers, output) {
     A lot of this execution code appears redundant and in need of reworking.
     */
     else if (key.func == "add") {  // Flexible addition for both integer vals and variable vals
+        if (['final int'].includes(registers[key.reg_val].type)) {
+            alterConstantMessage(key.reg_val, output)
+            return 'quit';
+        }
         let res = performMathOp(registers, key.var1, key.var2, mips.add)
         if (res === null) {
             undeclaredVariableMessage(key.var2, output)
@@ -58,7 +82,11 @@ export default function execute(instruction, registers, output) {
         registers[key.reg_val] = new Register('int', res)
     }
     //The following is analogous to "addi". Roughly the same comments apply.
-    else if (key.func == "sub") {  // Flexible subtraction for both integer vals and variable vals              
+    else if (key.func == "sub") {  // Flexible subtraction for both integer vals and variable vals
+        if (['final int'].includes(registers[key.reg_val].type)) {
+            alterConstantMessage(key.reg_val, output)
+            return 'quit';
+        }              
         let res = performMathOp(registers, key.var1, key.var2, mips.sub)
         if (res === null) {
             undeclaredVariableMessage(key.var2, output)
@@ -68,6 +96,10 @@ export default function execute(instruction, registers, output) {
     }
     //The following is analogous to "addi" and "subi". Roughly the same comments apply.
     else if (key.func == "mult") {  // Flexible multiplication
+        if (['final int'].includes(registers[key.reg_val].type)) {
+            alterConstantMessage(key.reg_val, output)
+            return 'quit';
+        }
         let res = performMathOp(registers, key.var1, key.var2, mips.mult)
         if (res === null) {
             undeclaredVariableMessage(key.var2, output)
@@ -77,6 +109,10 @@ export default function execute(instruction, registers, output) {
     }
     //The following is analogous to "addi", "subi", and "mult". Roughly the same comments apply.
     else if (key.func == "div") {   // Flexible divison
+        if (['final int'].includes(registers[key.reg_val].type)) {
+            alterConstantMessage(key.reg_val, output)
+            return 'quit';
+        }
         let res = performMathOp(registers, key.var1, key.var2, mips.div)
         if (res === null) {
             undeclaredVariableMessage(key.var2, output)
@@ -118,7 +154,7 @@ export default function execute(instruction, registers, output) {
             undeclaredVariableMessage(loop_variable[loop_variable.indexOf("=")+1], output)
             return 'quit'
         }
-        instruction = buildLWInstruction(loop_variable[loop_variable.indexOf("=")-1], res)
+        instruction = buildLWInstruction(loop_variable[loop_variable.indexOf("=")-1], res, false)
 
         //This line executes the instruction, therefore setting the value to the variable in registers.
         for_interpreter.execute(instruction) // Loading looping variable to a register
@@ -514,6 +550,10 @@ function changeByOne(conditions, registers, operation, output) {
         undeclaredVariableMessage(line[0], output)
         return 'quit';
     }
+    else if (['final int'].includes(registers[line[0]].type)) {
+        alterConstantMessage(line[0], output)
+        return 'quit';
+    }
 
     //The variable is incremented within registers, as is appropriate.
     registers[line[0]] = new Register('int', operation(registers[line[0]].value, 1))
@@ -579,6 +619,10 @@ function changeByMany(conditions, registers, operation, output) {
     if (!Object.prototype.hasOwnProperty.call(registers, line[0])) {
         undeclaredVariableMessage(line[0], output)
         return 'quit'
+    }
+    else if (['final int'].includes(registers[line[0]].type)) {
+        alterConstantMessage(line[0], output)
+        return 'quit';
     }
 
     registers[line[0]] = new Register('int', operation(registers[line[0]].value, line[1])) // Incrementing conditional value

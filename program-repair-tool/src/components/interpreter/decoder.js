@@ -43,6 +43,14 @@ export default function decode(registers, blocks_list, instructions, output) {  
         //A variable named instruction is initialized to an empty object.
         var instruction = {} 
 
+        let constant = false
+
+        if (keyword == 'final') {
+            constant = true
+            kw_vals[i].shift()
+            keyword = kw_vals[i][0]
+        }
+
         // Trying to check if register has a variable already exists and execute accordingly
         // This should also prevent variable initialization errors.
         /*
@@ -108,7 +116,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     That is also done very frequently, should maybe do some code reuse.
                     */
 
-                    instruction = buildLWInstruction(line[1], line[1])
+                    instruction = buildLWInstruction(line[1], line[1], constant)
      
                 }
                 // For initializing a variable e.g. (int a = 5;)
@@ -144,7 +152,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                         undeclaredVariableMessage(value, output)
                         return;
                     }
-                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], res)
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], res, constant)
                     
                 }
                 // For initializing a variable with the output of an expression e.g. (int a = 2 + 3; int a = b + c..)
@@ -166,7 +174,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     let expression = line.splice(3,line.length-3);
                     expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
 
-                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression)
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression, constant)
 
                 }
                 break;
@@ -189,7 +197,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 if (line.length > 3) {
                     let expression = line.splice(2,line.length-2)
                     expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
-                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression)
+                    instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression, constant)
                 }
                 /*
                 Otherwise, if the line is three words long and has the word "+=" that is not at the beginning, the following is done.
@@ -560,11 +568,12 @@ function clipSemicolon(word) {
     return word
 }
 
-export function buildLWInstruction(var1, value) {
+export function buildLWInstruction(var1, value, constant) {
     let instruction = {
         func: "lw",      
         var1: var1,
-        value: value      
+        value: value,
+        constant: constant      
     };
     return instruction;
 }
@@ -641,6 +650,11 @@ function missingBracketMessage(output) {
 export function duplicateDeclarationMessage(variable, output) {
     output.splice(0, output.length)
     output.push(new Error("Variable " + variable + " was already declared.", 'duplicate declaration'))
+}
+
+export function alterConstantMessage(variable, output) {
+    output.splice(0, output.length)
+    output.push(new Error("Variable " + variable + " is a constant and cannot be altered.", 'alter constant'))
 }
 
 export function substituteVariable(registers, value) {

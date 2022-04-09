@@ -45,6 +45,7 @@ class Problems {
            { name: 'Divide by zero', prompt: 'Testing dividing by zero.', code: ['int a = 5 + 9 / 0;', 'System.out.println(a);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '95' },
            { name: 'Duplicate Declaration Test', prompt: 'Testing duplicate declaration.', code: ['int a = 5;', 'for (int a = 0; a < 4; a++) {', 'System.out.println(a);', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '0,1,2,3' },
            { name: 'Missing bracket test', prompt: 'Testing missing bracket.', code: ['for (int a = 0; a < 4; a++) {', 'System.out.println(a);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '0,1,2,3' },
+           { name: 'Testing Final', prompt: 'Testing a constant integer.', code: ['final int a = 4;', 'final int b = a - 2;', 'System.out.println(b);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '2' },
         ];
     }
 
