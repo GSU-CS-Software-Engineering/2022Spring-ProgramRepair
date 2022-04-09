@@ -1,6 +1,7 @@
 import * as mips from './mips_instructions.js'
 import Interpreter from './Interpreter.js';
 import { buildLWInstruction, substituteVariable, undeclaredVariableMessage, expressionSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage } from './decoder.js';
+import Register from './Register.js';
 // Instructions execute after each instruction is decoded, so it reads and executes code from top to bottom.
 /*
 Like the previous comment says, this method is run after each instruction is decoded.
@@ -13,7 +14,7 @@ export default function execute(instruction, registers, output) {
     if (key.func == "lw") {         // Loading value to registers
         //If key has a numeric value, set the variable in registers with the same name as key's var1 to equal key's value.
         if (mips.isNumeric(key.value)) {
-            registers[key.var1] = key.value
+            registers[key.var1] = new Register('int', key.value)
         }
         
 
@@ -34,12 +35,12 @@ export default function execute(instruction, registers, output) {
                 return 'quit'
             }
         
-            registers[key.var1] = res
+            registers[key.var1] = new Register('int', res)
 
         } 
 
         else if (key.value.length == 1) {
-            registers[key.var1] = null
+            registers[key.var1] = new Register('int', null)
         }
 
     }
@@ -54,7 +55,7 @@ export default function execute(instruction, registers, output) {
             undeclaredVariableMessage(key.var2, output)
             return 'quit';
         }
-        registers[key.reg_val] = res
+        registers[key.reg_val] = new Register('int', res)
     }
     //The following is analogous to "addi". Roughly the same comments apply.
     else if (key.func == "sub") {  // Flexible subtraction for both integer vals and variable vals              
@@ -63,7 +64,7 @@ export default function execute(instruction, registers, output) {
             undeclaredVariableMessage(key.var2, output)
             return 'quit';
         }
-        registers[key.reg_val] = res
+        registers[key.reg_val] = new Register('int', res)
     }
     //The following is analogous to "addi" and "subi". Roughly the same comments apply.
     else if (key.func == "mult") {  // Flexible multiplication
@@ -72,7 +73,7 @@ export default function execute(instruction, registers, output) {
             undeclaredVariableMessage(key.var2, output)
             return 'quit';
         }
-        registers[key.reg_val] = res
+        registers[key.reg_val] = new Register('int', res)
     }
     //The following is analogous to "addi", "subi", and "mult". Roughly the same comments apply.
     else if (key.func == "div") {   // Flexible divison
@@ -81,7 +82,7 @@ export default function execute(instruction, registers, output) {
             undeclaredVariableMessage(key.var2, output)
             return 'quit';
         }
-        registers[key.reg_val] = res
+        registers[key.reg_val] = new Register('int', res)
     }
     //There is a desperate need for code reuse with the above code pieces.
 
@@ -121,6 +122,8 @@ export default function execute(instruction, registers, output) {
 
         //This line executes the instruction, therefore setting the value to the variable in registers.
         for_interpreter.execute(instruction) // Loading looping variable to a register
+
+        console.log(for_interpreter.registers[loop_variable[loop_variable.indexOf("=")-1]])
         
         // Decode the incrementer portion of condition and save it as a function to run in the while loop
         //The following function, named incrementer, performs the logic present in the third part of conditions, so in an example of for (int i = 0; i < 10; i++), it would be i++.
@@ -219,6 +222,7 @@ export default function execute(instruction, registers, output) {
             if (res === null) {
                 return 'quit';
             }
+            console.log(res)
             if (!res) {
                 break;
             }
@@ -350,7 +354,7 @@ export default function execute(instruction, registers, output) {
 
         //Otherwise, if there is a variable named value, content become's that variable's value.
         else if (Object.prototype.hasOwnProperty.call(registers, key.value)) {
-            content = registers[key.value]
+            content = registers[key.value].value
         }
         // For printing expressions
         /*
@@ -512,7 +516,7 @@ function changeByOne(conditions, registers, operation, output) {
     }
 
     //The variable is incremented within registers, as is appropriate.
-    registers[line[0]] = operation(registers[line[0]], 1)
+    registers[line[0]] = new Register('int', operation(registers[line[0]].value, 1))
 }
 
 function changeByMany(conditions, registers, operation, output) {
@@ -577,7 +581,7 @@ function changeByMany(conditions, registers, operation, output) {
         return 'quit'
     }
 
-    registers[line[0]] = operation(registers[line[0]], line[1]) // Incrementing conditional value
+    registers[line[0]] = new Register('int', operation(registers[line[0]].value, line[1])) // Incrementing conditional value
 }
 
 function branch(conditions, registers, type, output) {
@@ -616,6 +620,8 @@ function branch(conditions, registers, type, output) {
         undeclaredVariableMessage(line[2], output)
         return null;
     }
+
+    console.log(register, comparator)
     
     /*
     Different calculations are done depending on what the operator is.
@@ -648,6 +654,6 @@ function cloneRegisters(registers) {
 
 function callbackRegisters(registers, new_registers) {
     for (const variable in registers) {
-        registers[variable] = new_registers[variable]
+        registers[variable].value = new_registers[variable].value
     }
 }

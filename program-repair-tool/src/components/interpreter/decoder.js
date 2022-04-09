@@ -1,6 +1,7 @@
 import execute from "./executor.js"
 import { isNumeric } from './mips_instructions.js'
 import Error from './Error.js'
+import Register from './Register.js'
 /*
 The gargantuan function below is in charge of reading over the code line by line, creating instructions and calling the execute function on them.
 We will consider breaking it down into multiple functions to make it more manageable.
@@ -648,7 +649,7 @@ export function substituteVariable(registers, value) {
         return value;
     }
     else if (Object.prototype.hasOwnProperty.call(registers, value)) {
-        return registers[value];
+        return registers[value].value;
     }
     else {
         return null;
