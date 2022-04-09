@@ -57,7 +57,7 @@ import { createToaster } from "@meforma/vue-toaster";
 Unsure why an asterisk was needed to import from Interpreter.js, importing semantics can be looked up if needed.
 n: it seems that the asterisk imports everything from the file instead of designated portions. This is a wildcard import. Not recommended generally but still used.https://rules.sonarsource.com/javascript/RSPEC-2208
 */
-import * as Interpreter from "./interpreter/Interpreter.js"
+import Interpreter from "./interpreter/Interpreter.js"
 
 export default {
     //Draggable is registered as a component, which allows it to be used in the template above.
@@ -95,7 +95,7 @@ export default {
             let undefined;  // constructor requires two arguments and has checks for undefined
             //An instance of the interpreter is created and run with the code.
             //The semantics of how it is created can be checked when we look at the interpreter code.
-            let i = new Interpreter.Interpreter(blocks_list, undefined)
+            let i = new Interpreter(blocks_list, undefined)
             i.run()
             
             // Submitting output for rendering to STDOUT
