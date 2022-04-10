@@ -47,6 +47,7 @@ class Problems {
            { name: 'Missing bracket test', prompt: 'Testing missing bracket.', code: ['for (int a = 0; a < 4; a++) {', 'System.out.println(a);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '0,1,2,3' },
            { name: 'Testing Final', prompt: 'Testing a constant integer.', code: ['final int a = 4;', 'final int b = a - 2;', 'System.out.println(b);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '2' },
            { name: 'Testing Divison', prompt: 'Testing integer vs. double divison.', code: ['double x = 2;', 'int y = 3;', 'System.out.println(x * y / 4);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '1.5' },
+           { name: 'Testing Booleans 1', prompt: 'Testing boolean functionality.', code: ['boolean x = 4 + 3 > 6', 'System.out.println(!!x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'true' },
         ];
     }
 

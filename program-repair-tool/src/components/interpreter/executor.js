@@ -1,19 +1,19 @@
 import * as mips from './mips_instructions.js'
 import Interpreter from './Interpreter.js';
-import { buildLWInstruction, substituteVariable, uninitializedVariableMessage, expressionSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage, alterConstantMessage, invalidIntMessage } from './decoder.js';
+import { buildLWInstruction, substituteVariable, uninitializedVariableMessage, mathExpressionSyntaxMessage, booleanSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage, alterConstantMessage, invalidIntMessage, invalidDoubleMessage ,invalidBooleanMessage, invalidOperationMessage } from './decoder.js';
 import Register from './Register.js';
 // Instructions execute after each instruction is decoded, so it reads and executes code from top to bottom.
 /*
 Like the previous comment says, this method is run after each instruction is decoded.
 We may want to do all decoding first and then execute the instructions one-by-one, depending on the situation.
 */
-export default function execute(instruction, registers, output) {
+export function execute(instruction, registers, output) {
     //The variable key is set to equal instruction, uncertain why they didn't just use the instruction parameter.
     let key = instruction
     //The following is done if func is "lw".
     if (key.func == "lw") {         // Loading value to registers
 
-        if (key.type === null && ['final int', 'final double'].includes(registers[key.var1].type) && registers[key.var1].value !== null) {
+        if (key.type === null && ['final int', 'final double', 'final boolean'].includes(registers[key.var1].type) && registers[key.var1].value !== null) {
             alterConstantMessage(key.var1, output)
             return 'quit';
         }
@@ -24,7 +24,7 @@ export default function execute(instruction, registers, output) {
 
         let value = null
         //If key has a numeric value, set the variable in registers with the same name as key's var1 to equal key's value.
-        if (mips.isNumeric(key.value)) {
+        if (key.value === null || (key.value.length == 1 && mips.isNumeric(key.value))) {
            value = key.value
         }
         
@@ -40,8 +40,29 @@ export default function execute(instruction, registers, output) {
         This should be altered as a part of error checking.
         */
 
-        else if (key.value.length > 2) {
-            let res = evaluateExpression(key.value, registers, output)
+        else {
+            let res = null
+            let bool = false
+
+            if (key.value.length === undefined) {
+                key.value = [key.value]
+            }
+            
+            for (let i = 0; i < key.value.length; i++) {
+                if (['>', '>=', '<', '<=', '==', '&&', '||', 'true', '!true', 'false', '!false'].includes(key.value[i]) || key.value[i] == true | key.value[i] == false || key.value[i].includes('!')) {
+                    bool = true
+                    break
+                }
+            }
+
+            if (!bool) {
+                res = evaluateMathExpression(key.value, registers, output)
+            }
+            else if (bool) {
+                res = evaluateBooleanExpression(key.value, registers, output)
+                console.log(res)
+            }
+            
             if (res === null) {
                 return 'quit'
             }
@@ -49,10 +70,6 @@ export default function execute(instruction, registers, output) {
             value = res
 
         } 
-
-        else if (key.value.length == 1) {
-            value = null
-        }
 
         if (['int', 'final int'].includes(key.type)) {
             if (!validateInt(value)) {
@@ -64,6 +81,13 @@ export default function execute(instruction, registers, output) {
         if (['double', 'final double'].includes(key.type)) {
             if (!mips.isNumeric(value)) {
                 invalidDoubleMessage(key.var1, value, output)
+                return 'quit'
+            }
+        }
+
+        if(['boolean', 'final boolean'].includes(key.type)) {
+            if (!validateBoolean(value)) {
+                invalidBooleanMessage(key.var1, value, output)
                 return 'quit'
             }
         }
@@ -81,9 +105,8 @@ export default function execute(instruction, registers, output) {
             alterConstantMessage(key.reg_val, output)
             return 'quit';
         }
-        let res = performMathOp(registers, key.var1, key.var2, mips.add)
+        let res = performMathOp(registers, key.var1, key.var2, mips.add, output)
         if (res === null) {
-            uninitializedVariableMessage(key.var2, output)
             return 'quit';
         }
         if (registers[key.reg_val].type == 'int' && !validateInt(res)) {
@@ -102,9 +125,8 @@ export default function execute(instruction, registers, output) {
             alterConstantMessage(key.reg_val, output)
             return 'quit';
         }              
-        let res = performMathOp(registers, key.var1, key.var2, mips.sub)
+        let res = performMathOp(registers, key.var1, key.var2, mips.sub, output)
         if (res === null) {
-            uninitializedVariableMessage(key.var2, output)
             return 'quit';
         }
         if (registers[key.reg_val].type == 'int' && !validateInt(res)) {
@@ -123,9 +145,8 @@ export default function execute(instruction, registers, output) {
             alterConstantMessage(key.reg_val, output)
             return 'quit';
         }
-        let res = performMathOp(registers, key.var1, key.var2, mips.mult)
+        let res = performMathOp(registers, key.var1, key.var2, mips.mult, output)
         if (res === null) {
-            uninitializedVariableMessage(key.var2, output)
             return 'quit';
         }
         if (registers[key.reg_val].type == 'int' && !validateInt(res)) {
@@ -144,9 +165,8 @@ export default function execute(instruction, registers, output) {
             alterConstantMessage(key.reg_val, output)
             return 'quit';
         }
-        let res = performMathOp(registers, key.var1, key.var2, mips.div)
+        let res = performMathOp(registers, key.var1, key.var2, mips.div, output)
         if (res === null) {
-            uninitializedVariableMessage(key.var2, output)
             return 'quit';
         }
         else if (res === "Error: division by zero") {
@@ -451,18 +471,33 @@ export default function execute(instruction, registers, output) {
         Should maybe reorder this conditional statements, depending on how we change the program.
         Keep in mind the assumptions that this program is making about spacing, we need to make sure that spacing is consistent within our code blocks.
         */
-        else if (key.value.split(' ').length > 2) {
-            let res = evaluateExpression(key.value.split(' '), registers, output)
+        else {
+            let res = null
+            let exp = key.value.split(' ')
+            console.log('exp = ' + exp)
+            let bool = false
+            for (let i = 0; i < exp.length; i++) {
+                if (['>', '>=', '<', '<=', '==', '&&', '||', 'true', '!true', 'false', '!false'].includes(exp[i]) || exp[i] == true | exp[i] == false || exp[i].includes('!')) {
+                    bool = true
+                    break
+                }
+                else if (Object.prototype.hasOwnProperty.call(registers, exp[i]) && registers[exp[i]].type == 'boolean') {
+                    bool = true
+                    break
+                }
+            }
+            if (bool) {
+                res = evaluateBooleanExpression(exp, registers, output)
+            }
+            else {
+                res = evaluateMathExpression(exp, registers, output)
+            }
+
             if (res === null) {
                 return 'quit';
             }
             content = res
         } 
-
-        else {
-            uninitializedVariableMessage(key.value, output)
-            return 'quit';
-        }
 
         /*
         Regardless of what content has become, it is added to the main interpreter's output.
@@ -472,7 +507,7 @@ export default function execute(instruction, registers, output) {
     }
 }
 
-function evaluateExpression(value, registers, output) {
+function evaluateMathExpression(value, registers, output) {
 
     // Extracting variable values if there are any
     /*
@@ -515,8 +550,8 @@ function evaluateExpression(value, registers, output) {
         }
     }
 
-    if (!/^[\d]+(\.[\d]+)?[+\-*\/][\d]+(\.[\d]+)?([+\-*\/][\d]+(\.[\d]+)?)*$/.test(expression.join(''))) {
-        expressionSyntaxMessage(expression.join(' '), output)
+    if (!/^-?[\d]+(\.[\d]+)?[+\-*\/]-?[\d]+(\.[\d]+)?([+\-*\/]-?[\d]+(\.[\d]+)?)*$/.test(expression.join(''))) {
+        mathExpressionSyntaxMessage(expression.join(' '), output)
         return null;
     }
 
@@ -592,7 +627,177 @@ function evaluateExpression(value, registers, output) {
 
 } 
 
-function performMathOp(registers, var1, var2, operation) {
+function evaluateBooleanExpression(value, registers, output) {
+
+    console.log(value)
+
+    // Extracting variable values if there are any
+    /*
+    The following line replaces any variables in the expressions with their values and saves it in the expression variable.
+    Once again this does not seem to check for the case where an unitialized variable is used.
+    Perhaps we ought to include that detection in the decode method.
+    */
+
+    let expression = []
+
+    for (let i = 0; i < value.length; i++) {
+        if (['==', '>', '>=', '<', '<=', '&&', '||', '!', '+', '-', '*', '/'].includes(value[i])) {
+            expression.push(value[i])
+        }
+        else {
+            if(value[i][0] == '!') {
+
+                while (value[i].length > 0 && value[i][0] == '!') {
+                    value[i] = value[i].substring(1)
+                    expression.push('!') 
+                }
+
+            }
+
+            let res = substituteVariable(registers, value[i])
+            if (res == null) {
+
+                uninitializedVariableMessage(value[i], output)
+                return null
+            }
+            expression.push(res)
+        }
+    }
+
+    console.log(expression)
+
+    let expressionString = expression.join(' ')
+
+    for (let i = 0; i < expression.length; i++) {
+        if (['+', '-', '*', '/'].includes(expression[i])) {
+            if (i - 1 < 0 || i + 1 >= expression.length || !mips.isNumeric(expression[i-1]) || !mips.isNumeric(expression[i+1])) {
+                booleanSyntaxMessage(expressionString, output)
+                return null;
+            }
+            else {
+                let miniExpression = [expression[i-1], expression[i], expression[i+1]]
+                let res = evaluateMathExpression(miniExpression, registers, output)
+                if (res === null) {
+                    return null
+                }
+                expression.splice(i-1, 3, res)
+                i--
+            }
+        }
+    }
+
+    for (let i = 0; i < expression.length; i++) {
+        if (expression[i] == '!') {
+            let negate = true
+            expression.splice(i, 1)
+            while (i < expression.length && expression[i] == '!') {
+                negate = !negate
+                expression.splice(i, 1)
+            }
+            if (i >= expression.length || !validateBoolean(expression[i])) {
+                booleanSyntaxMessage(expressionString, output)
+                return null;
+            }
+            else if (negate) {
+                if (expression[i] == true) {
+                    expression[i] = false
+                }
+                else {
+                    expression[i] = true
+                }
+            }
+        }
+    }
+
+    if (!/^(true|false|-?[\d]+(\.[\d]+)?)((>|>=|<=|<|==|&&|\|\|)(true|false|-?[\d]+(\.[\d]+)?))*$/.test(expression.join(''))) {
+        booleanSyntaxMessage(expressionString, output)
+        return null;
+    }
+
+    // Computing mult/div then add/sub
+    /*
+    The following two loops complete the math expression.
+    The first loop performs any multiplication and division while the second loop performs any addition and subtraction, in accordance with the order of operations.
+    */
+
+    for (let i = 0; i < expression.length; i++) {
+        //x becomes the expression element being currently iterated over.
+        let x = expression[i]
+
+        if (['==', '>', '>=', '<', '<='].includes(x)) {
+            if (x == '==' && validateBoolean(expression[i-1]) && mips.isNumeric(expression[i+1])) {
+                continue
+            }
+            let res = evaluateComparison(expression[i-1], x, expression[i+1])
+            if (res === null) {
+                booleanSyntaxMessage(expressionString, output)
+                return null
+            }
+
+            expression.splice(--i, 3, res)
+
+        }
+
+    }
+
+    for (let i = 0; i < expression.length; i++) {
+        let x = expression[i]
+        if (x == '==') {
+            let res = evaluateComparison(expression[i-1], x, expression[i+1])
+            if (res === null) {
+                booleanSyntaxMessage(expressionString, output)
+                return null
+            }
+            expression.splice(--i, 3, res)
+        }
+    }
+
+    if (!/^(true|false)((&&|\|\|)(true|false))*$/.test(expression.join(''))) {
+        booleanSyntaxMessage(expressionString, output)
+        return null;
+    }
+
+    for (let i = 0; i < expression.length; i++) {
+        let x = expression[i]
+        if (x == 'true' || x == true) {
+            expression[i] = '1'
+        }
+        else if (x == 'false' || x == false) {
+            expression[i] = '0'
+        }
+        else if (x == '&&') {
+            expression[i] = '*'
+        }
+        else if (x == '||') {
+            expression[i] = '+'
+        }
+    }
+
+    console.log("What is given as a math expression:", expression)
+
+    let ret = null
+
+    if (expression.length == 1) {
+        ret = expression[0]
+    }
+
+    else {
+        ret = evaluateMathExpression(expression, registers, output)  
+    }
+
+    if (ret == 0) {
+        return false
+    }
+    else if (ret !== null) {
+        return true
+    }
+    else {
+        return null
+    }
+
+} 
+
+function performMathOp(registers, var1, var2, operation, output) {
     // Next 2 lines checks which code entries are integers vs a preexisting register value (variable)
     /*
     I'm not even sure if the above comment is right but I doubt it.
@@ -602,7 +807,15 @@ function performMathOp(registers, var1, var2, operation) {
     */
     let val1 = substituteVariable(registers, var1) 
     let val2 = substituteVariable(registers, var2)
+
+    if (!mips.isNumeric(val1)) {
+        invalidOperationMessage(val1, output)
+    }
+    if (!mips.isNumeric(val2)) {
+        invalidOperationMessage(val2, output)
+    }
     if (val2 === null) {
+        uninitializedVariableMessage(val2, output)
         return null;
     }  
     return operation(val1, val2)
@@ -640,6 +853,10 @@ function changeByOne(conditions, registers, operation, output) {
     }
     else if (['final int', 'final double'].includes(registers[line[0]].type)) {
         alterConstantMessage(line[0], output)
+        return 'quit';
+    }
+    else if (!mips.isNumeric(registers[line[0]].value)) {
+        invalidOperationMessage(registers[line[0]].value, output)
         return 'quit';
     }
 
@@ -713,6 +930,16 @@ function changeByMany(conditions, registers, operation, output) {
         return 'quit';
     }
 
+    if (!mips.isNumeric(registers[line[0]].value)) {
+        invalidOperationMessage(registers[line[0]].value, output)
+        return 'quit';
+    }
+
+    if (!mips.isNumeric(line[1])) {
+        invalidOperationMessage(line[1], output)
+        return 'quit';
+    }
+
     let value = operation(registers[line[0]].value, line[1])
 
     if (value === "Error: division by zero") {
@@ -764,47 +991,8 @@ function branch(conditions, registers, type, output) {
     Otherwise, which assumes it is something other than a variable, register is just set to that.
     */
     console.log(conditions)
-    let register = substituteVariable(registers, line[0])
-
-    if (register === null) {
-        uninitializedVariableMessage(line[0], output)
-        return null;
-    }
-
-    //operator is set to the second word, which indeed should be an operator.
-    let operator = line[1]  // Should be a comparison operator
-    //The same operation is done to assign comparator as was done to assign register, except it is done on the third word this time.
-    let comparator = substituteVariable(registers, line[2])
-
-    if (comparator === null) {
-        uninitializedVariableMessage(line[2], output)
-        return null;
-    }
-
-    console.log(register, comparator)
     
-    /*
-    Different calculations are done depending on what the operator is.
-    I realize now that names for register and comparator are a bit misleading, they are really just operands.
-    If the default case is hit, which it should not be, a message is displayed to the console.
-    break statements may not be needed after each case, but perhaps they should be added to be safe.
-    */
-    switch(operator) {
-        case "<":
-            return mips.blt(register, comparator)
-        case ">":
-            return mips.bgt(register, comparator)
-        case "<=":
-            return mips.blte(register, comparator)
-        case ">=":
-            return mips.bgte(register, comparator)       
-        case "==":
-            return mips.beq(register, comparator)
-        default:
-            console.log("default branch case on operator: " + operator)
-            break;
-
-    }
+    return evaluateBooleanExpression(line, registers, output)
     
 }
 
@@ -824,5 +1012,55 @@ function validateInt(input) {
     }
     else {
         return false
+    }
+}
+
+export function validateBoolean(input) {
+    return input == 'true' || input == 'false' || input == true || input == false
+}
+
+function evaluateComparison(op1, operator, op2) {
+    let numericOp = null
+    if (mips.isNumeric(op1) && mips.isNumeric(op2)) {
+        numericOp = true
+    }
+    else if (validateBoolean(op1) && validateBoolean(op2)) {
+        numericOp = false
+    }
+    else {
+        return null
+    }
+    switch(operator) {
+        case "<":
+            if (!numericOp) {
+                return null
+            }
+            return mips.blt(op1, op2)
+        case ">":
+            if (!numericOp) {
+                return null
+            }
+            return mips.bgt(op1, op2)
+        case "<=":
+            if (!numericOp) {
+                return null
+            }
+            return mips.blte(op1, op2)
+        case ">=":
+            if (!numericOp) {
+                return null
+            }
+            return mips.bgte(op1, op2)       
+        case "==":
+            if (numericOp) {
+                return mips.beq(op1, op2)
+            }
+            else {
+                return op1 == op2
+            }
+        default:
+            console.log("default branch case on operator: " + operator)
+            return null
+
     }
 }
