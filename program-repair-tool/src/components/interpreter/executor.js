@@ -1,6 +1,6 @@
 import * as mips from './mips_instructions.js'
 import Interpreter from './Interpreter.js';
-import { buildLWInstruction, substituteVariable, uninitializedVariableMessage, mathExpressionSyntaxMessage, booleanSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage, alterConstantMessage, invalidIntMessage, invalidDoubleMessage ,invalidBooleanMessage, invalidOperationMessage } from './decoder.js';
+import { buildLWInstruction, substituteVariable, uninitializedVariableMessage, mathExpressionSyntaxMessage, booleanSyntaxMessage, stringSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage, alterConstantMessage, invalidIntMessage, invalidDoubleMessage ,invalidBooleanMessage, invalidStringMessage, invalidOperationMessage, stringSyntaxMessage } from './decoder.js';
 import Register from './Register.js';
 // Instructions execute after each instruction is decoded, so it reads and executes code from top to bottom.
 /*
@@ -13,7 +13,7 @@ export function execute(instruction, registers, output) {
     //The following is done if func is "lw".
     if (key.func == "lw") {         // Loading value to registers
 
-        if (key.type === null && ['final int', 'final double', 'final boolean'].includes(registers[key.var1].type) && registers[key.var1].value !== null) {
+        if (key.type === null && ['final int', 'final double', 'final boolean', 'final String'].includes(registers[key.var1].type) && registers[key.var1].value !== null) {
             alterConstantMessage(key.var1, output)
             return 'quit';
         }
@@ -24,7 +24,7 @@ export function execute(instruction, registers, output) {
 
         let value = null
         //If key has a numeric value, set the variable in registers with the same name as key's var1 to equal key's value.
-        if (key.value === null || (key.value.length == 1 && mips.isNumeric(key.value))) {
+        if (key.value === null || (key.value.length == 1 && (mips.isNumeric(key.value) || validateString(key.value)))) {
            value = key.value
         }
         
@@ -47,20 +47,29 @@ export function execute(instruction, registers, output) {
             if (key.value.length === undefined) {
                 key.value = [key.value]
             }
+
+            let expType = 'math'
             
             for (let i = 0; i < key.value.length; i++) {
-                if (['>', '>=', '<', '<=', '==', '&&', '||', 'true', '!true', 'false', '!false'].includes(key.value[i]) || key.value[i] == true | key.value[i] == false || key.value[i].includes('!')) {
-                    bool = true
+                if (key.value[i].includes('"')) {
+                    expType = 'String'
+                    break
+                }
+                else if (['>', '>=', '<', '<=', '==', '&&', '||', 'true', '!true', 'false', '!false'].includes(key.value[i]) || key.value[i] == true | key.value[i] == false || key.value[i].includes('!')) {
+                    expType = 'boolean'
                     break
                 }
             }
 
-            if (!bool) {
+            if (expType == 'math') {
                 res = evaluateMathExpression(key.value, registers, output)
             }
-            else if (bool) {
+            else if (expType == 'boolean') {
                 res = evaluateBooleanExpression(key.value, registers, output)
                 console.log(res)
+            }
+            else if (expType == 'String') {
+                res = evaluateStringExpression(key.value, registers, output)
             }
             
             if (res === null) {
@@ -85,9 +94,16 @@ export function execute(instruction, registers, output) {
             }
         }
 
-        if(['boolean', 'final boolean'].includes(key.type)) {
+        if (['boolean', 'final boolean'].includes(key.type)) {
             if (!validateBoolean(value)) {
                 invalidBooleanMessage(key.var1, value, output)
+                return 'quit'
+            }
+        }
+
+        if (['String', 'final String'].includes(key.type)) {
+            if (!validateString(value)) {
+                invalidStringMessage(key.var1, value, output)
                 return 'quit'
             }
         }
@@ -797,6 +813,95 @@ function evaluateBooleanExpression(value, registers, output) {
 
 } 
 
+function evaluateStringExpression(value, registers, output) {
+    let expression = []
+    let references = {}
+    let expressionString = value.join(' ')
+
+    for (let i = 0; i < value.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(registers, value[i])) {
+            if (['String', 'final String'].includes(registers[value[i]].type)) {
+                references[i] = value[i]
+                expression.push(registers[value[i]].value)
+            }
+            else {
+                stringSyntaxMessage(expressionString, output)
+                return null
+            }
+        }
+        else {
+            if (validateString(value[i]) || ['+', '+='].includes(value[i])) {
+                expression.push(value[i])
+            }
+            else {
+                stringSyntaxMessage(expressionString, output)
+                return null
+            }
+        }
+    }
+
+    expressionString = expression.join(' ')
+
+    for (let i = 0; i < expression.length; i++) {
+        if (expression[i] == '+' || expression[i] == '+=') {
+            if (i == 0 || i == expression.length - 1 || !validateString(expresion[i-1]) || !validateString(expresion[i+1])) {
+                stringSyntaxMessage(expressionString, output)
+                return null
+            }
+            
+            if (expression[i] == '+') {
+                delete references[i-1]
+                delete references[i+1]
+                let newString = concatenate(expression[i-1], expression[i+1])
+                expression.splice(--i, 3, newString)
+                references = updateReferences(references, i)
+            }
+
+            else {
+                if (!Object.hasOwnProperty.call(references, i-1)) {
+                    stringSyntaxMessage(expressionString, output)
+                    return null
+                }
+                else {
+                    let newString = concatenate(expression[i-1], expression[i+1])
+                    registers[references[i-1]].value = newString
+                    delete references[i-1]
+                    expression.splice(--i, 3, newString)
+                    references = updateReferences(references, i)
+                }
+            }
+        }
+    }
+
+    if (expression.length != 1) {
+        stringSyntaxMessage(expressionString, output)
+        return null
+    }
+    else {
+        return expression.join()
+    }
+
+}
+
+function concatenate(str1, str2) {
+    str1 = str1.substring(1).slice(0,-1)
+    str2 = str2.substring(1).slice(0,-1)
+    return '"' + str1 + str2 + '"'
+}
+
+function updateReferences(references, deletionPoint) {
+    let newReferences = {}
+    for (const index in references) {
+        if (index >= deletionPoint) {
+            newReferences[index - 2] = references[index]
+        }
+        else {
+            newReferences[index] = references[index]
+        }
+    }
+    return newReferences
+}
+
 function performMathOp(registers, var1, var2, operation, output) {
     // Next 2 lines checks which code entries are integers vs a preexisting register value (variable)
     /*
@@ -1007,16 +1112,15 @@ function callbackRegisters(registers, new_registers) {
 }
 
 function validateInt(input) {
-    if (/^-?[\d]+$/.test(input)) {
-        return true
-    }
-    else {
-        return false
-    }
+    return /^-?[\d]+$/.test(input)
 }
 
 export function validateBoolean(input) {
     return input == 'true' || input == 'false' || input == true || input == false
+}
+
+export function validateString(input) {
+    return /^"[^"]*"$/.test(input)
 }
 
 function evaluateComparison(op1, operator, op2) {
