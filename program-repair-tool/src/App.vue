@@ -5,11 +5,23 @@ There is currently an uncertainty on line 22.
 Below is this component's template.
 -->
 <template>
+<div>
+    <div class="Header">
+      <h1></h1>
+      <Header/>
+    </div>
+
+    <div class="Footer">
+      <h1></h1>
+      <Footer/>
+    </div>
+  </div>
   <div>
+    <router-view>
       <!--
       The router-view element will become the component that is currently being pointed to by the router.
       -->
-      <router-view />
+      </router-view>
   </div>
 </template>
 
@@ -30,6 +42,7 @@ export default {
   }
 }
 </script>
+
 
 <!--
 Below is this component's styling.
