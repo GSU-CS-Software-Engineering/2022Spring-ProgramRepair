@@ -567,6 +567,8 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     let expression = line.splice(3,line.length-3);
                     expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
 
+                    expression = collapseStrings(expression)
+
                     let type = null
 
                     if (constant) {
@@ -604,7 +606,12 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 The instruction's var2 is set to what is being added to the variable, with any semicolons removed.
                 */
                 else if (line[1] == "+=" && line.length == 3) {  // Only works if line length == 3; ( num += 2 ) and ( num += num )
-                    instruction = buildMathInstruction("add", line[0], line[0], clipSemicolon(line[2]))
+                    if (['String', 'final String'].includes(registers[line[0]].type)) {
+                        instruction = buildLWInstruction(line[0], [line[0], '+', clipSemicolon(line[2])], null)
+                    }
+                    else {
+                        instruction = buildMathInstruction("add", line[0], line[0], clipSemicolon(line[2]))
+                    }
                 }   
                 /*
                 Otherwise, if the line contains the word "-" that is not at the beginning, the following is done.
@@ -1100,4 +1107,39 @@ export function substituteVariable(registers, value) {
     else {
         return null;
     }
+}
+
+export function collapseStrings(expression) {
+    let string = null
+    let building = false
+    let ret = []
+    for (let i = 0; i < expression.length; i++) {
+        if (expression[i].includes('"') && (expression[i].length == 1 || !expression[i].substring(1).includes('"')) && !building) {
+            building = true
+            string = expression[i]
+        }
+        else if (building && !expression[i].includes('"')) {
+            string += " "
+            string += expression[i]
+        }
+        else if (building && expression[i].includes('"')) {
+            string += " "
+            string += expression[i]
+            ret.push(string)
+            string = null
+            building = false
+        }
+        else {
+            ret.push(expression[i])
+        }
+    }
+
+    if (ret.length == 1) {
+        console.log(ret)
+        return ret[0]
+    }
+    else {
+        return ret  
+    }
+
 }

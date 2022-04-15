@@ -48,6 +48,12 @@ class Problems {
            { name: 'Testing Final', prompt: 'Testing a constant integer.', code: ['final int a = 4;', 'final int b = a - 2;', 'System.out.println(b);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '2' },
            { name: 'Testing Divison', prompt: 'Testing integer vs. double divison.', code: ['double x = 2;', 'int y = 3;', 'System.out.println(x * y / 4);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '1.5' },
            { name: 'Testing Booleans 1', prompt: 'Testing boolean functionality.', code: ['boolean x = 4 + 3 > 6', 'System.out.println(!!x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'true' },
+           { name: 'Testing String Saving', prompt: 'Testing String functionality.', code: ['String s = "Hello there!"', 'System.out.println(s);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hello there!' },
+           { name: 'Testing Incorrect String Assignment', prompt: 'Testing String functionality in case of an error.', code: ['String s = 4', 'System.out.println(s);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '4' },
+           { name: 'Testing String Expressions 1', prompt: 'Testing simple String expressions.', code: ['String s = "H"', 'System.out.println(s += "ello" + " World");', 'System.out.println(s);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hello World,Hello' },
+           { name: 'Testing String Expressions 2', prompt: 'Testing simple String expressions with an error.', code: ['String s = "H"', 'System.out.println(s += "ello + " World");', 'System.out.println(s);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hello World,Hello' },
+           { name: 'Testing String Expressions 3', prompt: 'Testing complex String expressions.', code: ['String s = "H"', 's += !true', 's += 9','System.out.println(s);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hfalse9' }
+
         ];
     }
 

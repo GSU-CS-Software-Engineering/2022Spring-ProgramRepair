@@ -1,6 +1,6 @@
 import * as mips from './mips_instructions.js'
 import Interpreter from './Interpreter.js';
-import { buildLWInstruction, substituteVariable, uninitializedVariableMessage, mathExpressionSyntaxMessage, booleanSyntaxMessage, stringSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage, alterConstantMessage, invalidIntMessage, invalidDoubleMessage ,invalidBooleanMessage, invalidStringMessage, invalidOperationMessage, stringSyntaxMessage } from './decoder.js';
+import { buildLWInstruction, substituteVariable, uninitializedVariableMessage, mathExpressionSyntaxMessage, booleanSyntaxMessage, stringSyntaxMessage, divideByZeroMessage, duplicateDeclarationMessage, alterConstantMessage, invalidIntMessage, invalidDoubleMessage ,invalidBooleanMessage, invalidStringMessage, invalidOperationMessage, collapseStrings } from './decoder.js';
 import Register from './Register.js';
 // Instructions execute after each instruction is decoded, so it reads and executes code from top to bottom.
 /*
@@ -24,7 +24,7 @@ export function execute(instruction, registers, output) {
 
         let value = null
         //If key has a numeric value, set the variable in registers with the same name as key's var1 to equal key's value.
-        if (key.value === null || (key.value.length == 1 && (mips.isNumeric(key.value) || validateString(key.value)))) {
+        if (key.value === null || mips.isNumeric(key.value) || validateString(key.value)) {
            value = key.value
         }
         
@@ -41,42 +41,12 @@ export function execute(instruction, registers, output) {
         */
 
         else {
-            let res = null
-            let bool = false
+        
+            value = evaluateGeneralExpression(key.value, registers, output)
 
-            if (key.value.length === undefined) {
-                key.value = [key.value]
-            }
-
-            let expType = 'math'
-            
-            for (let i = 0; i < key.value.length; i++) {
-                if (key.value[i].includes('"')) {
-                    expType = 'String'
-                    break
-                }
-                else if (['>', '>=', '<', '<=', '==', '&&', '||', 'true', '!true', 'false', '!false'].includes(key.value[i]) || key.value[i] == true | key.value[i] == false || key.value[i].includes('!')) {
-                    expType = 'boolean'
-                    break
-                }
-            }
-
-            if (expType == 'math') {
-                res = evaluateMathExpression(key.value, registers, output)
-            }
-            else if (expType == 'boolean') {
-                res = evaluateBooleanExpression(key.value, registers, output)
-                console.log(res)
-            }
-            else if (expType == 'String') {
-                res = evaluateStringExpression(key.value, registers, output)
-            }
-            
-            if (res === null) {
+            if (value === null) {
                 return 'quit'
             }
-        
-            value = res
 
         } 
 
@@ -107,6 +77,8 @@ export function execute(instruction, registers, output) {
                 return 'quit'
             }
         }
+
+        console.log(value)
 
         registers[key.var1] = new Register(key.type, value)
 
@@ -468,18 +440,22 @@ export function execute(instruction, registers, output) {
         If the value contains double quotes, then content becomes the text after the first set of quotes but before the second set of quotes, if there are any.
         Does not facilitate error checking or the possibility of String expressions within a print statement.
         */
-        if (key.value.indexOf(`"`) >= 0) {
+        if (validateString(key.value)) {
             content = key.value.split(`"`)[1]
         }
         
         //Otherwise, if the value is numeric, content is simply set to that value.
-        else if (mips.isNumeric(key.value)) {
+        else if (mips.isNumeric(key.value) || validateBoolean(key.value)) {
             content = key.value
         }
 
         //Otherwise, if there is a variable named value, content become's that variable's value.
         else if (Object.prototype.hasOwnProperty.call(registers, key.value)) {
             content = registers[key.value].value
+            console.log(content)
+            if (['String', 'final String'].includes(registers[key.value].type)) {
+                content = content.split(`"`)[1]
+            }
         }
         // For printing expressions
         /*
@@ -488,31 +464,18 @@ export function execute(instruction, registers, output) {
         Keep in mind the assumptions that this program is making about spacing, we need to make sure that spacing is consistent within our code blocks.
         */
         else {
-            let res = null
             let exp = key.value.split(' ')
+            exp = collapseStrings(exp)
             console.log('exp = ' + exp)
-            let bool = false
-            for (let i = 0; i < exp.length; i++) {
-                if (['>', '>=', '<', '<=', '==', '&&', '||', 'true', '!true', 'false', '!false'].includes(exp[i]) || exp[i] == true | exp[i] == false || exp[i].includes('!')) {
-                    bool = true
-                    break
-                }
-                else if (Object.prototype.hasOwnProperty.call(registers, exp[i]) && registers[exp[i]].type == 'boolean') {
-                    bool = true
-                    break
-                }
-            }
-            if (bool) {
-                res = evaluateBooleanExpression(exp, registers, output)
-            }
-            else {
-                res = evaluateMathExpression(exp, registers, output)
+            content = evaluateGeneralExpression(exp, registers, output)
+
+            if (content === null) {
+                return 'quit'
             }
 
-            if (res === null) {
-                return 'quit';
+            if (validateString(content)) {
+                content = content.split(`"`)[1]
             }
-            content = res
         } 
 
         /*
@@ -566,7 +529,7 @@ function evaluateMathExpression(value, registers, output) {
         }
     }
 
-    if (!/^-?[\d]+(\.[\d]+)?[+\-*\/]-?[\d]+(\.[\d]+)?([+\-*\/]-?[\d]+(\.[\d]+)?)*$/.test(expression.join(''))) {
+    if (!/^-?[\d]+(\.[\d]+)?[+\-*/]-?[\d]+(\.[\d]+)?([+\-*/]-?[\d]+(\.[\d]+)?)*$/.test(expression.join(''))) {
         mathExpressionSyntaxMessage(expression.join(' '), output)
         return null;
     }
@@ -645,6 +608,10 @@ function evaluateMathExpression(value, registers, output) {
 
 function evaluateBooleanExpression(value, registers, output) {
 
+    if (!Array.isArray(value)) {
+        value = [value]
+    }
+
     console.log(value)
 
     // Extracting variable values if there are any
@@ -715,7 +682,7 @@ function evaluateBooleanExpression(value, registers, output) {
                 return null;
             }
             else if (negate) {
-                if (expression[i] == true) {
+                if (expression[i] == true || expression[i] == 'true') {
                     expression[i] = false
                 }
                 else {
@@ -773,6 +740,8 @@ function evaluateBooleanExpression(value, registers, output) {
         return null;
     }
 
+    console.log(expression)
+
     for (let i = 0; i < expression.length; i++) {
         let x = expression[i]
         if (x == 'true' || x == true) {
@@ -818,20 +787,43 @@ function evaluateStringExpression(value, registers, output) {
     let references = {}
     let expressionString = value.join(' ')
 
+    console.log("Value is: ", value)
+
     for (let i = 0; i < value.length; i++) {
         if (Object.prototype.hasOwnProperty.call(registers, value[i])) {
-            if (['String', 'final String'].includes(registers[value[i]].type)) {
+            let varType = registers[value[i]].type
+            if (['String', 'final String'].includes(varType)) {
                 references[i] = value[i]
                 expression.push(registers[value[i]].value)
             }
-            else {
-                stringSyntaxMessage(expressionString, output)
-                return null
+            else if (['int', 'final int', 'double', 'final double', 'boolean', 'final boolean'].includes(varType)) {
+                expression.push(convertToString(registers[value[i]].value))
             }
         }
         else {
             if (validateString(value[i]) || ['+', '+='].includes(value[i])) {
                 expression.push(value[i])
+            }
+            else if (validateBoolean(value[i]) || mips.isNumeric(value[i])) {
+                expression.push(convertToString(value[i]))
+            }
+            else if (value[i][0] == '!') {
+                let count = 0
+                while (value[i][0] == '!') {
+                    count++
+                    value[i] = value[i].substring(1)
+                }
+                if (validateBoolean(value[i]) || Object.prototype.hasOwnProperty.call(registers, value[i])) {
+                    for (let c = 0; c < count; c++) {
+                        value[i] = '!' + value[i]
+                    }
+                    let ret = evaluateBooleanExpression(value[i], registers, output)
+                    console.log("ret is ", ret)
+                    if (ret === null) {
+                        return null
+                    }
+                    expression.push(convertToString(ret))
+                }
             }
             else {
                 stringSyntaxMessage(expressionString, output)
@@ -844,7 +836,7 @@ function evaluateStringExpression(value, registers, output) {
 
     for (let i = 0; i < expression.length; i++) {
         if (expression[i] == '+' || expression[i] == '+=') {
-            if (i == 0 || i == expression.length - 1 || !validateString(expresion[i-1]) || !validateString(expresion[i+1])) {
+            if (i == 0 || i == expression.length - 1 || !validateString(expression[i-1]) || !validateString(expression[i+1])) {
                 stringSyntaxMessage(expressionString, output)
                 return null
             }
@@ -902,6 +894,49 @@ function updateReferences(references, deletionPoint) {
     return newReferences
 }
 
+function convertToString(value) {
+    return '"' + value + '"'
+}
+
+function evaluateGeneralExpression(expression, registers, output) {
+    let res = null
+
+    if (!Arrays.isArray(expression)) {
+        expression = [expression]
+    }
+
+    let expType = 'math'
+    
+    for (let i = 0; i < expression.length; i++) {
+        if (expression[i].includes('"') || (Object.prototype.hasOwnProperty.call(registers, expression[i]) && ['String', 'final String'].includes(registers[expression[i]].type))) {
+            expType = 'String'
+            break
+        }
+    }
+
+    if (expType != 'String') {
+        for (let i = 0; i < expression.length; i++) {
+            if (['>', '>=', '<', '<=', '==', '&&', '||', 'true', 'false'].includes(expression[i]) || expression[i] == true | expression[i] == false || expression[i].includes('!') || (Object.prototype.hasOwnProperty.call(registers, expression[i]) && ['boolean', 'final boolean'].includes(registers[expression[i]].type))) {
+                expType = 'boolean'
+                break
+            }
+        }
+    }
+
+    if (expType == 'math') {
+        res = evaluateMathExpression(expression, registers, output)
+    }
+    else if (expType == 'boolean') {
+        res = evaluateBooleanExpression(expression, registers, output)
+        console.log(res)
+    }
+    else if (expType == 'String') {
+        res = evaluateStringExpression(expression, registers, output)
+    }
+
+    return res
+
+}
 function performMathOp(registers, var1, var2, operation, output) {
     // Next 2 lines checks which code entries are integers vs a preexisting register value (variable)
     /*
