@@ -4,7 +4,12 @@ As such it has no visuals, it lacks anything in its template or style sections.
 It does however still have to be a Vue component, in order for event emitting to be available.
 -->
 <template>
-    
+    <div>
+      <!--
+      The router-view element will become the component that is currently being pointed to by the router.
+      -->
+      <router-view />
+  </div>
 </template>
 
 <script>

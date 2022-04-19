@@ -4,8 +4,12 @@ import router from './router';
 //Bulma CSS is used in this project, as shown here.
 import 'bulma/css/bulma.css';
 
+import Toaster from "@meforma/vue-toaster";
+createApp(App).use(Toaster).mount("#App");
 
 const app = createApp(App);
+
+
 
 /*
 The following statement is a bit odd.

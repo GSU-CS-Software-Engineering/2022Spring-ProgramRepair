@@ -10,8 +10,7 @@ It imports all the functions from mips_instructions.js to use for itself.
 import decode from './decoder.js'
 import { execute } from './executor'
 
-
-export default class Interpreter {
+class Interpreter {
                 
     constructor(blocks_list, registers) {
         /*
@@ -80,3 +79,5 @@ export default class Interpreter {
         execute(instruction, this.registers, this.output)
     }
 }
+
+export default Interpreter;
