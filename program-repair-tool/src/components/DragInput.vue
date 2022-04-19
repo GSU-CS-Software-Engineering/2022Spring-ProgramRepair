@@ -33,6 +33,9 @@ Below is the template for this component.
         </div>
 
         <div>
+
+            <button id="runBtn" class="button" @click="run">Run</button>
+            <button class="button" @click="clearConsole">Clear Console</button>
             <button class="button" @click="returnHome">Home</button>
             <button class="button" @click="clearWorkspace">Clear</button>
             <button class="button" @click="clearConsole">Clear Console</button>
@@ -84,6 +87,7 @@ export default {
         It is aynchronous, so while statements will be executed in sequence, the function will not wait for a statement to finish executing before proceeding to the next one.
         */
         async run() {
+            document.getElementById("runBtn").disabled = true
             //Unsure of why the console is cleared, may want to change that.
             console.clear()
             // Converting drag/drop components to strings, then running through interpreter
@@ -102,6 +106,11 @@ export default {
             // Submitting output for rendering to STDOUT
             //The output from the interpreter is obtained.
             let output_array = i.get_output();
+
+            if (output_array.length > 0 && Object.prototype.hasOwnProperty.call(output_array[0], 'errorType')) {
+                output_array = [output_array[0].message]
+            }
+
             /*
             The join method returns the array's contents separated by a certain character, in this case, a ",".
             This makes the following statement dubious since the returned value is never stored anwyehre, and output_array itself is unchanged.
@@ -163,6 +172,11 @@ export default {
                 }
             }
 
+
+            document.getElementById("runBtn").disabled = false
+
+            },
+
             //Loading spinner
             this.loading=!false
             setTimeout(()=>{
@@ -170,6 +184,7 @@ export default {
             },1000)
 
         },
+
 
         //This function fires a clearConsole event with no data.
         clearConsole() {

@@ -163,9 +163,11 @@ export default {
         Interestingly, this method does not clear prexisting output, it appends to it. We may want to change this.
         */
         updateOutput(value) {
+            this.clearConsole()
             for(let i in value) {
                 this.output.data.push(">  " + value[i])
             }
+            console.log(this.output.data)
         },
         // Clearing STDOUT, not javascript console.
         // This method does clear all output data.
