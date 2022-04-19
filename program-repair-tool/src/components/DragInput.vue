@@ -118,9 +118,8 @@ export default {
             let cur_problem=JSON.parse(window.localStorage.getItem('cur-problem')) || {answer: "Hello World"};
 
             console.log(cur_problem.answer)
-            /*
-            If the problem's answer matches the output array, the code is marked as correct.
-            */
+            
+            //If the problem's answer matches the output array, the code is marked as correct.
             if(cur_problem.answer == output_array) {
                 console.log("VALID")
                 const toaster = createToaster({ 
@@ -135,9 +134,25 @@ export default {
                 const toaster = createToaster({ 
                     type: "error",
                     position:"top", 
-                    duration:1500 
+                    duration:2000 
                 });
                 toaster.show(`Try Again. You can do this!`);
+            }
+
+            for (let i = 0; i<this.$data.items.length; i++){
+                if(this.$data.items[i] != cur_problem.code[i]){
+                    const toaster = createToaster({ 
+                        type: "info",
+                        position:"top", 
+                        duration:3000,
+                    });
+                    if (this.$props.problem.code.length > 0) {
+                        toaster.show("Try using all the available blocks")
+                    } else {
+                        toaster.show("'"+this.$data.items[i] + "' may be in the wrong position"); 
+                    }
+                    break;
+                }
             }
 
             //Loading spinner
