@@ -175,7 +175,6 @@ export default {
 
             document.getElementById("runBtn").disabled = false
 
-            },
 
             //Loading spinner
             this.loading=!false

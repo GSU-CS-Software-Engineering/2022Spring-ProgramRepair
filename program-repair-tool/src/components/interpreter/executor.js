@@ -901,7 +901,7 @@ function convertToString(value) {
 function evaluateGeneralExpression(expression, registers, output) {
     let res = null
 
-    if (!Arrays.isArray(expression)) {
+    if (!Array.isArray(expression)) {
         expression = [expression]
     }
 
