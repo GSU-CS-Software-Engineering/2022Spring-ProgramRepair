@@ -6,9 +6,6 @@ Below is this component's template.
 -->
 <template>
   <div>
-      <!--
-      The router-view element will become the component that is currently being pointed to by the router.
-      -->
       <router-view />
   </div>
 </template>
