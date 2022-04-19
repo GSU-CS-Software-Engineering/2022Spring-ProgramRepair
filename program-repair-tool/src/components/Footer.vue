@@ -5,7 +5,6 @@ Uncertainties currently exist at lines 6 and 18.
 Below is this component's template.
 I cannot find a class named hello and am uncertain if one exists, and if it does, where it originates.
 In any case, the value of the msg prop will be displayed
-N:This is code copied from a website that keeps everything from breaking
 -->
 <template>
   <div class="hello">

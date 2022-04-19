@@ -6,7 +6,7 @@ const supabaseUrl = "https://soooinzsevctsjcfqyeh.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvb29pbnpzZXZjdHNqY2ZxeWVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDk3OTAzMzAsImV4cCI6MTk2NTM2NjMzMH0.JzpSLS8PAZpuZVuYMWZBDfL2KP_klHi3tjH7iP9xfBk";
 
 // setup client
-const supabase = availableProblems(supabaseUrl, supabaseKey);
+const supabase = availbleProblems(supabaseUrl, supabaseKey);
 
 // ⬇ setup auth state listener ⬇
 supabase.auth.onAuthStateChange((event, session) => {
