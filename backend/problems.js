@@ -1,5 +1,4 @@
 //This is where the problems will be stored in our new application, on the backend.
-import {availableProblems} from "@supabase/supabase-js";
 class Problems {
     //Once this class is constructed an array called blocks and the problemList will be created, with some filler entries for now whose format will change.
     constructor() {
@@ -35,8 +34,6 @@ class Problems {
            { name: 'Expression test 1', prompt: 'Testing mathematical expression.', code: ['int a = 5 + 9 * 10;', 'System.out.println(a);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '95' },
            { name: 'Expression test 2', prompt: 'Testing printing a mathematical expression.', code: ['System.out.println(5 + 9 * 10);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '95' },
         ];
-        Array.prototype.push.apply(this.problemList,availableProblems);
-        console.log("push to Supabase");
     }
 
     //This method returns to problemList for a caller to make use of.
@@ -44,7 +41,6 @@ class Problems {
     getProblems() {
         return this.problemList;
     }
-   
 }
 
 module.exports = Problems;
