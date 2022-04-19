@@ -48,7 +48,7 @@ n: margin is set to auto in CreateProblems; should it be the same everywhere?
 <style scoped>
     ul {
         list-style-type: none;
-        /* margin: 10px; */
+        margin: 10px;
         padding: 10px;
         overflow: auto;
     }
