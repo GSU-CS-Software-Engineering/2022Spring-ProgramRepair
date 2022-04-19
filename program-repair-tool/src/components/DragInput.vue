@@ -77,6 +77,7 @@ export default {
             loading:false
         };
     },
+
     methods: {
         /*
         This is the run method.
@@ -128,6 +129,11 @@ export default {
                     duration:1500,
                 });
                 toaster.show(`Congratulations! You're correct!`);
+
+                // Temporarily make all of the code blocks green
+                for(let i = 1; i < this.$data.items.length + 1; i++) {
+                    this.highlight(i, 'lightgreen', 'lightblue', 3);
+                }
             }
             //If the problem's answer does not match the output array, the code is marked as incorrect.
             else {
@@ -137,21 +143,23 @@ export default {
                     duration:2000 
                 });
                 toaster.show(`Try Again. You can do this!`);
-            }
 
-            for (let i = 0; i<this.$data.items.length; i++){
-                if(this.$data.items[i] != cur_problem.code[i]){
-                    const toaster = createToaster({ 
-                        type: "info",
-                        position:"top", 
-                        duration:3000,
-                    });
-                    if (this.$props.problem.code.length > 0) {
-                        toaster.show("Try using all the available blocks")
-                    } else {
-                        toaster.show("'"+this.$data.items[i] + "' may be in the wrong position"); 
+                for (let i = 0; i<this.$data.items.length; i++){
+                    if(this.$data.items[i] != cur_problem.code[i]){
+                        const toaster = createToaster({ 
+                            type: "info",
+                            position:"top", 
+                            duration:3000,
+                        });
+                        if (this.$props.problem.code.length > 0) {
+                            toaster.show("Try using all the available blocks")
+                        } else {
+                            toaster.show("'"+this.$data.items[i] + "' may be in the wrong position");
+                            this.highlight(i, 'lightcoral', 'lightblue', 3);
+                        }
+                        
+                        break;
                     }
-                    break;
                 }
             }
 
@@ -177,7 +185,44 @@ export default {
             }
         },
 
-        
+        // Highlight a code block inside the DragInput component
+        // Blockindex = Index of code block being used, 1st block = 0, 2nd block = 1, etc.
+        // color = Color that the block will be highlighted as
+        // originalColor = Original color that the code block will revert to
+        // delaySeconds = Amount of time it takes for the block to change back
+        highlight(blockIndex, color, originalColor, delaySeconds) {
+            // Get the block at index `blockIndex`
+            // set its color styling to `color`
+            const workspace = document.querySelector('.workspace-container');
+            if(workspace == null) {
+                console.log("Cannot find workspace container!");
+            }            
+ 
+            if(workspace.hasChildNodes) {
+                // Area of div that draggable components rest
+                const dropZone = workspace.childNodes[1];
+                // Get the list of divs for each code block section
+                const list = dropZone.childNodes;
+
+                // Get div of the slot
+                const slot = list[blockIndex];
+
+                for(let i = 0; i < slot.childNodes.length; i++) {
+                    console.log(slot[i]);
+                }
+
+                const draggable = slot.childNodes[2];
+                // Set the color of the style.
+                // the 3rd element of each slot holds
+                // data for the draggable component
+                draggable.style.background = color;
+                // slot.style.background = color;
+
+                setTimeout(() => {
+                    draggable.style.background = originalColor;
+                }, delaySeconds * 1000);
+            }
+        },
 
         //This function shuffles an input array
         shuffle(array) {
@@ -241,7 +286,7 @@ Some styling is done on buttons, and several CSS classes are defined and they ar
     .draggable-item {
     display: flex;
     justify-content: center;
-    background-color: lightblue;
+    background: lightblue;
     box-shadow: 0px 2px 5px #aaa;
     margin: 1%;
     padding: 1%;
