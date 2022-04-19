@@ -34,12 +34,10 @@ Below is the template for this component.
 
         <div>
 
-            <button id="runBtn" class="button" @click="run">Run</button>
-            <button class="button" @click="clearConsole">Clear Console</button>
             <button class="button" @click="returnHome">Home</button>
             <button class="button" @click="clearWorkspace">Clear</button>
             <button class="button" @click="clearConsole">Clear Console</button>
-            <button class="button" @click="run">
+            <button id="runBtn" class="button" @click="run">
                 <div v-if="loading" class="spinner-border" role="status"></div>
                 <span v-if="loading" class="sr-only">Loading...</span>
                 <span v-else >Run</span>
@@ -128,6 +126,8 @@ export default {
             let cur_problem=JSON.parse(window.localStorage.getItem('cur-problem')) || {answer: "Hello World"};
 
             console.log(cur_problem.answer)
+
+            document.getElementById("runBtn").disabled = false
             
             //If the problem's answer matches the output array, the code is marked as correct.
             if(cur_problem.answer == output_array) {
@@ -171,9 +171,6 @@ export default {
                     }
                 }
             }
-
-
-            document.getElementById("runBtn").disabled = false
 
 
             //Loading spinner
