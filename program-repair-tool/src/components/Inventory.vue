@@ -10,7 +10,7 @@
         <!--
         This div holds the part of the screen where code blocks can be dragged around.
         -->
-        <div class="container">
+        <div class="inventory-container">
             <!--
             The following draggable tag is a component that was imported below.
             v-model="problem.code" will make it so that the code field of the problem attribute of the draggable component will match the code field of the problem attribute of this component, which is declared below.
@@ -61,7 +61,7 @@ Several CSS classes are defined and they are used in the above code.
 -->
 
 <style scoped>
-    .container {
+    .inventory-container {
     width: 500px;
     display: flex;
     flex-direction: row;

@@ -33,6 +33,8 @@ The template has a div that holds all of the HTML content.
             Blocks can be dragged around within the workspace section or outside of it to place them back into the inventory section.
             <br />
             When you are done constructing your solution, click the Run button to check your answer.
+             <br />
+            The Clear button will remove all blocks from your workspace, and the Clear Console button will empty the output in the console.
         </p>
         <hr />
         <!--
@@ -170,6 +172,16 @@ export default {
         clearConsole() {
             this.output.data.splice(0)
         },
+
+        // Force the components to re-render
+        reload() {
+            // TODO: Find out why this isn't updating the draggable component zones
+            this.$forceUpdate();
+
+            // TODO: Get this to work without reloading window
+            window.location.reload();
+        },
+
         /*
         This method returns a shuffled array.
         As it is implemented now, it starts with the last element of the array and iterates backwards, but skips the first element of the array.
