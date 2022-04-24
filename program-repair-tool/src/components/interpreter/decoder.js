@@ -1,25 +1,25 @@
+/*
+This file contains several functions that are used by the Java interpreter.
+The main one is the decode function, which is used to read over the code and produce instructions that can then be executed.
+Beneath decode are several helper functions that are used within decode, within execute, or both.
+Some functions are imported from executor.js and mips_instructions.js, and the Error class is imported as well.
+*/
 import { execute, validateBoolean, validateString } from "./executor.js"
 import { isNumeric } from './mips_instructions.js'
 import Error from './Error.js'
-import Register from './Register.js'
 /*
-The gargantuan function below is in charge of reading over the code line by line, creating instructions and calling the execute function on them.
-We will consider breaking it down into multiple functions to make it more manageable.
-We may also want to add error checking to this method.
+The decode function below is the default export of this file.
+Its parameters are the interpreter's registers object, the list of code blocks, the interpreter's instructions object, and the interpreter's output object.
 */
-export default function decode(registers, blocks_list, instructions, output) {  // Instruction should be a component with attributes that represent registers
-            // and extract the values from them as well as the function being performed
-            // Load values into registers
-
-    // Split each code line up into keywords and values by white space
+export default function decode(registers, blocks_list, instructions, output) {
     /*
     The following creates an array and stores it as kw_vals by applying an element-wise conditional statement on this object's blocks_list.
     If the element includes the text "System.out" then its corresponding element in kw_vals will be an array consisting of the String "print" and the original value of the element.
     Otherwise, the corresponding element in kw_vals becomes an array of elements, where each element in it is a "word" in the original element, and words are delimited by spaces.
-    This is actually done incorrectly, as it only works properly if words are separated by one space only.
-    Uncertain if this will be an actual problem, since we should have control over how code blocks are formatted, but it's worth keeping in mind.
-    Also worth keeping in mind is that it does not appear that the code makes any distinction between System.out.print or System.out.println, and may not even confirm if the required text after "System.out" is there.
-    Uncertain if this will be an issue either, considering our control over what code can be submitted.
+    This is actually done somewhat incorrectly, as it only works properly if words are separated by one space only.
+    I am uncertain if this will be an actual problem, since you should have control over how code blocks are formatted, but it's worth keeping in mind.
+    Also worth keeping in mind is that it does not appear that the code makes any distinction between System.out.print or System.out.println.
+    Uncertain if this will be an issue either, considering your control over what code can be submitted.
     */
     var kw_vals = blocks_list.map( x => {
         if (x.includes("System.out")) { // Marking stdout with a keyword for the decoder to read
@@ -42,17 +42,22 @@ export default function decode(registers, blocks_list, instructions, output) {  
         let line = kw_vals[i]
         //A variable named instruction is initialized to an empty object.
         var instruction = {} 
-
+        //This boolean is used to keep track of if a variable is a constant, meaning that the final keyword is used.
         let constant = false
 
+        /*
+        If the first word of the line is final, then this variable is indeed a constant.
+        The shift method eliminates the first element from the current line, so the word final is removed.
+        The keyword variable becomes the new first word, which should be int, double, and the like.
+        Of course, writing something like "final x" is improper syntax and this code does not check for that.
+        However, given that the web page should exercise some control over what code can be submitted to the interpreter, this should not be a problem.
+        */
         if (keyword == 'final') {
             constant = true
             kw_vals[i].shift()
             keyword = kw_vals[i][0]
         }
 
-        // Trying to check if register has a variable already exists and execute accordingly
-        // This should also prevent variable initialization errors.
         /*
         If this object's registers attribute has a property with the same name as the value of keyword, then keyword is set to have value "variable".
         This is used to represent that a previously declared variable name has been detected as the first word of the current element of kw_vals.
@@ -62,16 +67,12 @@ export default function decode(registers, blocks_list, instructions, output) {  
             keyword = "variable"
         }
 
-        // Have to declare these outside of switch: for/if
         /*
-        All of these variables are declared for use later.
+        These variables are declared for use later.
         new_blocks_list will contain statements to be executed within a for loop or if condition, if applicable.
-        conditions will be used to store conditions found in between the parentheses of a for loop or if-statement, if applicable.
-        block_start will hold the line number of the first line of a for loop or if-statement, if applicable.
-        block_end will hold the line number of the last line of a for loop or if-statement, if applicable.
-        scope_stack will be used in order to discover the beginning and end of a for loop or if-statement block, if applicable.
-        block_len will hold the length of the stack in lines, which will exclude the last line with the closing curly bracket but include the line where the for or if reserved word is used, if applicable.
+        conditions will be used to store conditions found in between the parentheses of a for loop or if statement, if applicable.
         */
+
         let new_blocks_list;
         let conditions;
 
@@ -84,37 +85,32 @@ export default function decode(registers, blocks_list, instructions, output) {  
 
             //The following is done in the event that keyword is "int".
         
-            case "int":     //  LOAD WORD: Copy from memory to register
+            case "int":    
                 
                 // For declaring a variable e.g. (int a;)
-                //The following is executed if this is an int variable being declared.
+                /*
+                The following is executed if this is an int variable being declared, but not initialized.
+                Given the control that the web page should have over the code the user submits, there should be no need to ensure that the second words is not numeric, but it's not like this check is harmful.
+                */
                 if (line.length == 2 && !isNumeric(line[1])) {
                     /*
-                    This statement slices off the semicolon from the end of the second element if it exists within it.
-                    This selection statement may not be needed for our project, since our code blocks will likely have semicolons whenever appropriate.
-                    This type of statement is done a lot within the code, so I won't repeat this, but it should be done differently.
-                    indexOf will return -1 if the substring does not exist within the String, not 0.
-                    It returning 0 would indicate that a semicolon exists at the beginning of the String, which would be odd but is still a case.
-                    Instead the includes method should be used for this.
-                    See here: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/includes
+                    The clipSemicolon function eliminates the trailing semicolon from a string, then returns the result.
+                    If there is no trailing semicolon it just returns the original string.
+                    This flexibility may not be needed, given that the webpage should force semicolons to be in their proper place.
                     */
                     line[1] = clipSemicolon(line[1])
+
+                    /*
+                    If the interpreter already has a variable with same name as the new variable attempting to be declared, throw a duplicate declaration error.
+                    Return to prevent further processing.
+                    */
 
                     if (Object.prototype.hasOwnProperty.call(registers, line[1])) {
                         duplicateDeclarationMessage(line[1], output)
                         return
                     }
 
-                    /*
-                    The instruction object is populated with attributes and values.
-                    lw stands for load word, and can be learned about here: https://www3.ntu.edu.sg/home/smitha/fyp_gerald/lwinstruction.html
-                    This doesn't seem to exactly be loading a word from anywhere, as a variable is just being declared.
-                    In fact, a variable being just declared does nothing in execution, but should affect decoding somehow to keep track of what variables there are.
-                    var1 contains the name of the variable being declared.
-                    Uncertain why there is a value attribute when there is no value in this situation, a variable is just being declared.
-                    Also uncertain why a semicolon is sought and eliminated if it exists from the second element in the line when this was already done previously.
-                    That is also done very frequently, should maybe do some code reuse.
-                    */
+                    //The variable type is used to keep track of if this variable is a constant or not.
 
                     let type = null
 
@@ -125,36 +121,34 @@ export default function decode(registers, blocks_list, instructions, output) {  
                         type = 'int'
                     }
 
+                    //The instruction is built with the variable name, no value, and the variable's type.
+
                     instruction = buildLWInstruction(line[1], null, type)
      
                 }
                 // For initializing a variable e.g. (int a = 5;)
                 /* 
                 The following is executed if this is an int variable being declared and initialized to a value.
-                Any line with four words that starts with int will be recognized as such, so we need to keep that in mind.
+                Any line with four words that starts with int will be recognized as such, so do keep that in mind.
                 */
                 else if (line.length == 4) {
+                    /*
+                    Just like before, if there is already a variable with the name that is to be used then the result should be an error.
+                    This is essentially the same thing that was done before, it's just done in an alternate way.
+                    This was a choice made by the preivous developers, most likely for felxibility that I do not believe will be needed.
+                    */
                     if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
                         duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
                         return
                     }
-                    /*
-                    The variable val is set to the value the variable is being initialized to.
-                    Uncertain why it is done this way as opposed to just "var val = line[3]"
-                    This way of doing things makes implicit some assumptions about the code, assumptions we need to be aware of.
-                    */
+                    //The variable val is set to the value the variable is being initialized to.
                     var val = line[line.indexOf("=") + 1]
-                    /*
-                    The variable value is set to val with its semicolon eliminated if it has one, or just val if it does not.
-                    Uncertain why the variable val was not reused here.
-                    */
+                    //The variable value is set to val with its semicolon eliminated if it has one, or just val if it does not.
                     var value = clipSemicolon(val)
                     /*
-                    Once again the instruction is given the func value "lw", which is a bit of a misnomer, actually.
-                    (Well, maybe not. I am a bit sleep deprived and what's important is how it works.)
-                    var1 is set to the name of the variable, which precedes the = sign.
-                    Uncertain why this isn't just done with line[1].
-                    The instruction's value will be set to the value attribute's value if that is a number, or, if the value attribute's value is the name of a variable in registers, then that variable's value is saved as the instruction's value instead.
+                    The substituteVariable method returns the value itself if it is a valid form to be just a value, the value of the variable that the value string refers to if one exists, or null if the previous two conditions are not satisfied.
+                    Should this occur it is understood to be a reference to a variable that does not exist, so the appropriate error is thrown and processing is halted.
+                    Semicolons within JavaScript code are optional here, so their presence or lack thereof is not meaningful.
                     */
                     console.log(value)
                     let res = substituteVariable(registers, value)
@@ -162,6 +156,8 @@ export default function decode(registers, blocks_list, instructions, output) {  
                         uninitializedVariableMessage(value, output)
                         return;
                     }
+
+                    //This process is identical to the one done before, where a variable is only declared, except now res is stored as the value of the variable.
 
                     let type = null
 
@@ -176,21 +172,22 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     
                 }
                 // For initializing a variable with the output of an expression e.g. (int a = 2 + 3; int a = b + c..)
+
                 /*
-                The following is executed if a variable is being declared and initialized to the value of an expression.
-                Once again this implies certain assumptions that we should keep in mind.
+                The following is executed if an int variable is being declared and initialized to the value of an expression.
+                A lot of elements in this process and the ones that follow are similar to the ones done before, so I will avoid repetitive comments.
+                It is certainly the case that code reuse should be employed to make things more efficient and readable, but this was not done now due to time constraints.
+                If you can generalize repeated processes into functions then I highly recommend it.
                 */
+
                 else if (line.length > 4) {
                     if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
                         duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
                         return
                     }
-                    /*
-                    The variable expression is set by first taking only the expression portion of the line using splice, and then eliminating the semicolon from each element if one exists.
-                    Once again the instruction is saved with func "lw".
-                    The instruction's var1 will be the variable name, though I am uncertain why it isn't just selected with line[1].
-                    The value of the instruction will be the expression. Will check on how this is used later.
-                    */
+
+                    //The variable expression is set by first taking only the expression portion of the line using splice, and then eliminating the semicolon from the last element if one exists.
+
                     let expression = line.splice(3,line.length-3);
                     expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
 
@@ -203,45 +200,27 @@ export default function decode(registers, blocks_list, instructions, output) {  
                         type = 'int'
                     }
 
+                    //On this occasion the variable's value is given as the expression for further processing.
+
                     instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression, type)
 
                 }
                 break;
 
             /*
-            The following is done in the event that the keyword is "variable".
-            This keyword should not exist in normal Java code, rather it is set as the keyword on line 122 if this line begins with a variable name that exists as a variable within registers.
-            The error case of a variable being set to a value when it has not yet been declared does not seem to be handled in this program, though to be fair it would not be handled at this time.
+            The processes done for variables of type int are almost identical to those done for double, boolean, and String, the other data types currently supported by the interpreter.
+            This is where code reuse should certainly be employed, both because all four data types use the same processes and because the processes have repeated elements within themselves, like how all if statement for int check for duplicate variable declaration.
             */
 
             case "double":
                 if (line.length == 2 && !isNumeric(line[1])) {
-                    /*
-                    This statement slices off the semicolon from the end of the second element if it exists within it.
-                    This selection statement may not be needed for our project, since our code blocks will likely have semicolons whenever appropriate.
-                    This type of statement is done a lot within the code, so I won't repeat this, but it should be done differently.
-                    indexOf will return -1 if the substring does not exist within the String, not 0.
-                    It returning 0 would indicate that a semicolon exists at the beginning of the String, which would be odd but is still a case.
-                    Instead the includes method should be used for this.
-                    See here: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/includes
-                    */
+        
                     line[1] = clipSemicolon(line[1])
 
                     if (Object.prototype.hasOwnProperty.call(registers, line[1])) {
                         duplicateDeclarationMessage(line[1], output)
                         return
                     }
-
-                    /*
-                    The instruction object is populated with attributes and values.
-                    lw stands for load word, and can be learned about here: https://www3.ntu.edu.sg/home/smitha/fyp_gerald/lwinstruction.html
-                    This doesn't seem to exactly be loading a word from anywhere, as a variable is just being declared.
-                    In fact, a variable being just declared does nothing in execution, but should affect decoding somehow to keep track of what variables there are.
-                    var1 contains the name of the variable being declared.
-                    Uncertain why there is a value attribute when there is no value in this situation, a variable is just being declared.
-                    Also uncertain why a semicolon is sought and eliminated if it exists from the second element in the line when this was already done previously.
-                    That is also done very frequently, should maybe do some code reuse.
-                    */
 
                     let type = null
 
@@ -255,34 +234,17 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     instruction = buildLWInstruction(line[1], null, type)
      
                 }
-                // For initializing a variable e.g. (int a = 5;)
-                /* 
-                The following is executed if this is an int variable being declared and initialized to a value.
-                Any line with four words that starts with int will be recognized as such, so we need to keep that in mind.
-                */
+
                 else if (line.length == 4) {
                     if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
                         duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
                         return
                     }
-                    /*
-                    The variable val is set to the value the variable is being initialized to.
-                    Uncertain why it is done this way as opposed to just "var val = line[3]"
-                    This way of doing things makes implicit some assumptions about the code, assumptions we need to be aware of.
-                    */
+
                     var val = line[line.indexOf("=") + 1]
-                    /*
-                    The variable value is set to val with its semicolon eliminated if it has one, or just val if it does not.
-                    Uncertain why the variable val was not reused here.
-                    */
+
                     var value = clipSemicolon(val)
-                    /*
-                    Once again the instruction is given the func value "lw", which is a bit of a misnomer, actually.
-                    (Well, maybe not. I am a bit sleep deprived and what's important is how it works.)
-                    var1 is set to the name of the variable, which precedes the = sign.
-                    Uncertain why this isn't just done with line[1].
-                    The instruction's value will be set to the value attribute's value if that is a number, or, if the value attribute's value is the name of a variable in registers, then that variable's value is saved as the instruction's value instead.
-                    */
+    
                     let res = substituteVariable(registers, value)
                     if (res === null) {
                         uninitializedVariableMessage(value, output)
@@ -301,22 +263,13 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     instruction = buildLWInstruction(line[(line.indexOf("=")-1)], res, type)
                     
                 }
-                // For initializing a variable with the output of an expression e.g. (int a = 2 + 3; int a = b + c..)
-                /*
-                The following is executed if a variable is being declared and initialized to the value of an expression.
-                Once again this implies certain assumptions that we should keep in mind.
-                */
+
                 else if (line.length > 4) {
                     if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
                         duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
                         return
                     }
-                    /*
-                    The variable expression is set by first taking only the expression portion of the line using splice, and then eliminating the semicolon from each element if one exists.
-                    Once again the instruction is saved with func "lw".
-                    The instruction's var1 will be the variable name, though I am uncertain why it isn't just selected with line[1].
-                    The value of the instruction will be the expression. Will check on how this is used later.
-                    */
+
                     let expression = line.splice(3,line.length-3);
                     expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
 
@@ -336,35 +289,15 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 break;
 
             case "boolean":
-                // For declaring a variable e.g. (int a;)
-                //The following is executed if this is an int variable being declared.
+
                 if (line.length == 2 && !isNumeric(line[1])) {
-                    /*
-                    This statement slices off the semicolon from the end of the second element if it exists within it.
-                    This selection statement may not be needed for our project, since our code blocks will likely have semicolons whenever appropriate.
-                    This type of statement is done a lot within the code, so I won't repeat this, but it should be done differently.
-                    indexOf will return -1 if the substring does not exist within the String, not 0.
-                    It returning 0 would indicate that a semicolon exists at the beginning of the String, which would be odd but is still a case.
-                    Instead the includes method should be used for this.
-                    See here: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/includes
-                    */
+
                     line[1] = clipSemicolon(line[1])
 
                     if (Object.prototype.hasOwnProperty.call(registers, line[1])) {
                         duplicateDeclarationMessage(line[1], output)
                         return
                     }
-
-                    /*
-                    The instruction object is populated with attributes and values.
-                    lw stands for load word, and can be learned about here: https://www3.ntu.edu.sg/home/smitha/fyp_gerald/lwinstruction.html
-                    This doesn't seem to exactly be loading a word from anywhere, as a variable is just being declared.
-                    In fact, a variable being just declared does nothing in execution, but should affect decoding somehow to keep track of what variables there are.
-                    var1 contains the name of the variable being declared.
-                    Uncertain why there is a value attribute when there is no value in this situation, a variable is just being declared.
-                    Also uncertain why a semicolon is sought and eliminated if it exists from the second element in the line when this was already done previously.
-                    That is also done very frequently, should maybe do some code reuse.
-                    */
 
                     let type = null
 
@@ -378,34 +311,17 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     instruction = buildLWInstruction(line[1], null, type)
      
                 }
-                // For initializing a variable e.g. (int a = 5;)
-                /* 
-                The following is executed if this is an int variable being declared and initialized to a value.
-                Any line with four words that starts with int will be recognized as such, so we need to keep that in mind.
-                */
+
                 else if (line.length == 4) {
                     if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
                         duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
                         return
                     }
-                    /*
-                    The variable val is set to the value the variable is being initialized to.
-                    Uncertain why it is done this way as opposed to just "var val = line[3]"
-                    This way of doing things makes implicit some assumptions about the code, assumptions we need to be aware of.
-                    */
+
                     var val = line[line.indexOf("=") + 1]
-                    /*
-                    The variable value is set to val with its semicolon eliminated if it has one, or just val if it does not.
-                    Uncertain why the variable val was not reused here.
-                    */
+                   
                     var value = clipSemicolon(val)
-                    /*
-                    Once again the instruction is given the func value "lw", which is a bit of a misnomer, actually.
-                    (Well, maybe not. I am a bit sleep deprived and what's important is how it works.)
-                    var1 is set to the name of the variable, which precedes the = sign.
-                    Uncertain why this isn't just done with line[1].
-                    The instruction's value will be set to the value attribute's value if that is a number, or, if the value attribute's value is the name of a variable in registers, then that variable's value is saved as the instruction's value instead.
-                    */
+                    
                     let res = substituteVariable(registers, value)
                     if (res === null) {
                         uninitializedVariableMessage(value, output)
@@ -424,22 +340,13 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     instruction = buildLWInstruction(line[(line.indexOf("=")-1)], res, type)
                     
                 }
-                // For initializing a variable with the output of an expression e.g. (int a = 2 + 3; int a = b + c..)
-                /*
-                The following is executed if a variable is being declared and initialized to the value of an expression.
-                Once again this implies certain assumptions that we should keep in mind.
-                */
+ 
                 else if (line.length > 4) {
                     if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
                         duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
                         return
                     }
-                    /*
-                    The variable expression is set by first taking only the expression portion of the line using splice, and then eliminating the semicolon from each element if one exists.
-                    Once again the instruction is saved with func "lw".
-                    The instruction's var1 will be the variable name, though I am uncertain why it isn't just selected with line[1].
-                    The value of the instruction will be the expression. Will check on how this is used later.
-                    */
+
                     let expression = line.splice(3,line.length-3);
                     expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
 
@@ -457,37 +364,17 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 }
                 break;
 
-                case "String":     //  LOAD WORD: Copy from memory to register
+                case "String":  
                 
-                // For declaring a variable e.g. (int a;)
-                //The following is executed if this is an int variable being declared.
+
                 if (line.length == 2 && !isNumeric(line[1])) {
-                    /*
-                    This statement slices off the semicolon from the end of the second element if it exists within it.
-                    This selection statement may not be needed for our project, since our code blocks will likely have semicolons whenever appropriate.
-                    This type of statement is done a lot within the code, so I won't repeat this, but it should be done differently.
-                    indexOf will return -1 if the substring does not exist within the String, not 0.
-                    It returning 0 would indicate that a semicolon exists at the beginning of the String, which would be odd but is still a case.
-                    Instead the includes method should be used for this.
-                    See here: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/includes
-                    */
+                   
                     line[1] = clipSemicolon(line[1])
 
                     if (Object.prototype.hasOwnProperty.call(registers, line[1])) {
                         duplicateDeclarationMessage(line[1], output)
                         return
                     }
-
-                    /*
-                    The instruction object is populated with attributes and values.
-                    lw stands for load word, and can be learned about here: https://www3.ntu.edu.sg/home/smitha/fyp_gerald/lwinstruction.html
-                    This doesn't seem to exactly be loading a word from anywhere, as a variable is just being declared.
-                    In fact, a variable being just declared does nothing in execution, but should affect decoding somehow to keep track of what variables there are.
-                    var1 contains the name of the variable being declared.
-                    Uncertain why there is a value attribute when there is no value in this situation, a variable is just being declared.
-                    Also uncertain why a semicolon is sought and eliminated if it exists from the second element in the line when this was already done previously.
-                    That is also done very frequently, should maybe do some code reuse.
-                    */
 
                     let type = null
 
@@ -501,34 +388,17 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     instruction = buildLWInstruction(line[1], null, type)
      
                 }
-                // For initializing a variable e.g. (int a = 5;)
-                /* 
-                The following is executed if this is an int variable being declared and initialized to a value.
-                Any line with four words that starts with int will be recognized as such, so we need to keep that in mind.
-                */
+               
                 else if (line.length == 4) {
                     if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
                         duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
                         return
                     }
-                    /*
-                    The variable val is set to the value the variable is being initialized to.
-                    Uncertain why it is done this way as opposed to just "var val = line[3]"
-                    This way of doing things makes implicit some assumptions about the code, assumptions we need to be aware of.
-                    */
+                    
                     var val = line[line.indexOf("=") + 1]
-                    /*
-                    The variable value is set to val with its semicolon eliminated if it has one, or just val if it does not.
-                    Uncertain why the variable val was not reused here.
-                    */
+                    
                     var value = clipSemicolon(val)
-                    /*
-                    Once again the instruction is given the func value "lw", which is a bit of a misnomer, actually.
-                    (Well, maybe not. I am a bit sleep deprived and what's important is how it works.)
-                    var1 is set to the name of the variable, which precedes the = sign.
-                    Uncertain why this isn't just done with line[1].
-                    The instruction's value will be set to the value attribute's value if that is a number, or, if the value attribute's value is the name of a variable in registers, then that variable's value is saved as the instruction's value instead.
-                    */
+                    
                     console.log(value)
                     let res = substituteVariable(registers, value)
                     if (res === null) {
@@ -548,26 +418,15 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     instruction = buildLWInstruction(line[(line.indexOf("=")-1)], res, type)
                     
                 }
-                // For initializing a variable with the output of an expression e.g. (int a = 2 + 3; int a = b + c..)
-                /*
-                The following is executed if a variable is being declared and initialized to the value of an expression.
-                Once again this implies certain assumptions that we should keep in mind.
-                */
+                
                 else if (line.length > 4) {
                     if (Object.prototype.hasOwnProperty.call(registers, line[(line.indexOf("=")-1)])) {
                         duplicateDeclarationMessage(line[(line.indexOf("=")-1)], output)
                         return
                     }
-                    /*
-                    The variable expression is set by first taking only the expression portion of the line using splice, and then eliminating the semicolon from each element if one exists.
-                    Once again the instruction is saved with func "lw".
-                    The instruction's var1 will be the variable name, though I am uncertain why it isn't just selected with line[1].
-                    The value of the instruction will be the expression. Will check on how this is used later.
-                    */
+                    
                     let expression = line.splice(3,line.length-3);
                     expression[expression.length - 1] = clipSemicolon(expression[expression.length - 1])
-
-                    expression = collapseStrings(expression)
 
                     let type = null
 
@@ -583,15 +442,17 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 }
                 break;
 
+            /*
+            The following is done in the event that the keyword is "variable".
+            This keyword should not exist in normal Java code, rather it is set as the keyword on line 67 if this line begins with a variable name that exists as a variable within registers.
+            The error case of a variable being set to a value when it has not yet been declared does not seem to be handled in this program, though to be fair it would not be handled at this time.
+            */
 
             case "variable": // (c = a + b +....(+-*/))
                 /*
                 If the line has more than three words then it is understood to involve an expression.
-                Like before, an expression variable is set to be only the expression itself, with all semicolons removed.
-                Once again, the instruction's func is set to lw.
-                var1 is set to the name of the attribute, uncertain why it wasn't just done with line[0], unless the code was supposed to be reused as its own function.
-                It should be, as this process is repetitive.
-                The instruction's value is set to be the expression.
+                Like before, an the value is set to be the expression itself, with all semicolons removed.
+                The type, as given to the instruction, is set as null to signal that a pre-existing variable is being manipulated.
                 */
                 if (line.length > 3) {
                     let expression = line.splice(2,line.length-2)
@@ -599,11 +460,9 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     instruction = buildLWInstruction(line[(line.indexOf("=")-1)], expression, null)
                 }
                 /*
-                Otherwise, if the line is three words long and has the word "+=" that is not at the beginning, the following is done.
-                The instruction's func is set to "addi".
-                The instruction's reg_val is set to the variable name.
-                The instruction's var1 is also set to the variable name.
-                The instruction's var2 is set to what is being added to the variable, with any semicolons removed.
+                Otherwise, if the line is three words long and has the word "+=" that is the second word, the following is done.
+                If the variable being manipulated is a String or final String, the instruction is built with the value being an expression adding the two addends, and null being the type, like before.
+                Otherwise the operation should be mathematical, so an appropriate instruction is created with the operation specified, the manipulated variable, and the two addends.
                 */
                 else if (line[1] == "+=" && line.length == 3) {  // Only works if line length == 3; ( num += 2 ) and ( num += num )
                     if (['String', 'final String'].includes(registers[line[0]].type)) {
@@ -614,59 +473,37 @@ export default function decode(registers, blocks_list, instructions, output) {  
                     }
                 }   
                 /*
-                Otherwise, if the line contains the word "-" that is not at the beginning, the following is done.
-                This is exactly the same as what begins on line 278, except it is concerned with subtraction and not addition.
+                The following is the exact same as what came earlier, just for a subtraction operation.
+                String expressions do not use this operator, so they don't need to be checked for here.
                 */
                 else if (line[1] == "-=" && line.length == 3) {
                     instruction = buildMathInstruction("sub", line[0], line[0], clipSemicolon(line[2]))
                 }
-                /*
-                Otherwise, if the line contains the word "*" that is not at the beginning, the following is done.
-                This is similar what begins on line 278 and 309, except it is concerned with multiplication instead of addition or subtraction.
-                One notable difference is that there is no check of the numericness of the operands, instead the instruction's func is just set to "mult".
-                Will discover the implications of this later.
-                */
+                //The following is the same, just for multiplication.
                 else if (line[1] == "*=" && line.length == 3) {
                     instruction = buildMathInstruction("mult", line[0], line[0], clipSemicolon(line[2]))
                 }
-                /*
-                Otherwise, if the line contains the word "/" that is not at the beginning, the following is done.
-                This is exactly the same as what begins on line 325, except it is concerned with division and not multiplication.
-                */
+                //And this one's for division.
                 else if (line[1] == "/=" && line.length == 3) {
                     instruction = buildMathInstruction("div", line[0], line[0], clipSemicolon(line[2]))
                 }          
                 /*
                 Otherwise, if the second word is "=" and the line is three words long, the following is done.
-                This is assumed to be simply assigning a value to an already declared variable.
-                Once again, I have not seen error checking for if the variable has not been declared yet.
-                The instruction's func is set to addi.
-                The instruction's reg_val is set to be the name of the variable being modified.
-                The instruction's var1 value depends on if registers has a property named the third word, so, if it is a variable that has been seen before.
-                If it does have a property with this name, then it checks to see if the value stored in registers for the property is the same as the name of the property, as that is the third word.
-                This doesn't make sense.
-                In any case, if they are equivalent, then var1 will equal 0, and if not then it will equal the value that the registers property contains.
-                If registers does not have a property named the third word, then the third word is just saved in var1 as is.
-                This is the case if the third word is not a variable, or not a varialbe that has been seen before.
-                Variables are detected and turned into their values when addi is performed anway, so var1 should just be sset to line[2], as far as I can tell.
-                The instruction's var2 is set to 0, as, since this is just assigning var1 to reg_val, it is the same as reg_val = var1 + 0, so the way addi is implemented can be reused.
-                Notably, semicolons do not seem to be removed here. Could be problematic.
+                This is simply assigning a value to an already declared variable.
+                An appropriate instruction is created.
                 */
                 else if (line[1] == "=" && line.length == 3) {  // Assigning a single value to a preexisting register (a = 5)
                     instruction = buildLWInstruction(line[0], clipSemicolon(line[2]), null)
                 }
-                /*
-                Otherwise there is presumed to be an error, and the line's contents are logged to the console with an error message.
-                We should perhaps change this behavior later.
-                */
+                //Otherwise there is presumed to be an error, and the line's contents are logged to the console with an error message.
                 else  {
                     console.log("Error: " + line)
                 }
                 break;
 
-            /*
-            The following is done if the keyword is "for".
-            */
+            
+            //The following is done if the keyword is "for".
+            
             case "for":
                 /*
                 line is set to be a String consisting of all the words separated by spaces.
@@ -674,11 +511,13 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 */
                 line = line.join(' ')
                 // Getting everything between the parentheses
-                //The following retrieves the text between the parentheses and delimites each piece by semicolons, storing it in the conditions variable.
+                //The following retrieves the text between the parentheses and delimits each piece by semicolons, storing it in the conditions variable.
                 conditions = line.split("(")[1].split(")")[0].split(";")
                 console.log(conditions)
-                // Beginning and end of lines being executed by the for loop
-
+                /*
+                The get_stack_scope method returns an object that contains information regarding the scope of the for loop.
+                If it returns null then there is a missing bracket, so that error is thrown and processing halts.
+                */
                 let scope = get_stack_scope(kw_vals, "for")
 
                 if (scope === null) {
@@ -705,14 +544,10 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 //After the two statements above, new_blocks_list consists of only the statements executed within the for loop.
 
                 /*
-                instruction's func is set to "for".
-                If new_blocks_list has more than one element, instruction's blocks_list is set to a String with each element separated by newline.
-                Otherwise, instruction's block_list is set to the sole element of new_blocks_list.
-                This could be assuming that new_blocks_list cannot be empty, which is indeed possible if the student makes a mistake.
-                We should keep an eye on this, I am uncertain if there could be some inconsistencies.
-                This instruction's conditions is set to the conditions array.
+                An appropriate instruction is built with the blocks to be executed within the loop and the loop's conditions supplied as information.
+                There is no need to format new_blocks_list as a string where elements are delimited by newlines if new_blocks_list does not have two or more elements.
                 */
-                
+
                 instruction = buildForInstruction(new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0], conditions)
 
                 break;
@@ -722,7 +557,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
             */
 
             case "if":  // Decoding if statements
-                    /*
+                /*
                 line is set to be a String consisting of all the words separated by spaces.
                 This is so that the content within the parentheses can be retrieved.
                 */
@@ -730,6 +565,8 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 // Getting everything between the parentheses
                 //As the old comment says, conditions will hold the text retrieved from in between the parentheses.
                 conditions = line.split("(")[1].split(")")[0]
+
+                //Like before, get_stack_scope is used to retrieve scope information.
 
                 let scopeStats = get_stack_scope(kw_vals, "if")
 
@@ -746,30 +583,23 @@ export default function decode(registers, blocks_list, instructions, output) {  
                 new_blocks_list.shift(); 
                 new_blocks_list.pop();
 
-                /*
-                The instruction's func attribute will be set to "if".
-                If new_blocks_list has more than one element, instruction's blocks_list is set to a String with each element separated by newline.
-                Otherwise, instruction's block_list is set to the sole element of new_blocks_list.
-                This could be assuming that new_blocks_list cannot be empty, which is indeed possible if the student makes a mistake.
-                We should keep an eye on this, I am uncertain if there could be some inconsistencies.
-                This instruction's conditions is set to the conditions array.
-                */
+                //Much like before, an appropriate instruction is constructed using the gathered information.
+                
                 instruction = buildIfInstruction(new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0], conditions)
 
                 // Storing (else if())'s following a standard if statement
                 //error:unexpected lexical decalration in case block (no-case-declaraton) 294-295
                 /*
-                Unsure of what the above comment is talking about right now.
+                Unsure of what the above comment is talking about right now, it originated from the previous team.
                 else_container is used to store any instructions related to the blocks found in this process of storing any else-if or else statements that follow an if-statement.
                 */
                 let else_container = []
-                //Currently uncertain why this variable is needed in the first place.
+
                 let placeHolder = i
 
                 /*
                 The following loop executes while kw_vals's placeHolder indexed element is not undefined, so assuming we have not gone out of bounds, and the kw_vals entry at index placeHolder has "else" at index 0.
-                May want to double check if this is the way one checks if a value is undefined, or if having an out of bounds index leads to an undefined result.
-                Keep in mind that placeHolder and i don't need to be incremented, since when a block is removed from kw_vals, what takes its place in index i is the next line after it.
+                Keep in mind that placeHolder and i should not be incremented, since when a block is removed from kw_vals, what takes its place in index i is the next line after it.
                 */
 
                 while (typeof(kw_vals[placeHolder]) !== 'undefined' && kw_vals[placeHolder].indexOf("else") == 0) {
@@ -800,24 +630,20 @@ export default function decode(registers, blocks_list, instructions, output) {  
                         //Also like before, the first and last elements of new_blocks_list are removed, thus leaving the statements executed inside of the else if block.
                         new_blocks_list.shift(); 
                         new_blocks_list.pop();
-                        /*
-                        An object called else_if_instruction is created.
-                        Its func is given the value "if", as it will eventually be executed like an if statement, given that its execution is dependent on its conditions.
-                        If new_blocks_list has more than one element, else_if_instruction's blocks_list is set to a String with each element separated by newline.
-                        Otherwise, else_if_instruction's block_list is set to the sole element of new_blocks_list.
-                        This could be assuming that new_blocks_list cannot be empty, which is indeed possible if the student makes a mistake.
-                        We should keep an eye on this, I am uncertain if there could be some inconsistencies.
-                        else_if_instruction's conditions is set to the conditions array.
-                        */
+
+                        //An instruction is created to represent the else-if.
+
                         let else_if_instruction = buildIfInstruction(new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0], conditions)
 
                         //Add the else_if_instruction to the else_container.
                         else_container.push(else_if_instruction)
+
                         /*
                         The instruction's else-if property is set to else_container.
                         This effectively updates the property else-if to have the value of else_container with the new block added.
                         This is a bit wasteful, as this update can be done after all blocks found are pushed to else_container, so, after the loop is done executing.
                         */
+
                         instruction["else-if"] = else_container
                         
                     }
@@ -839,14 +665,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
                         //Like before, the following two statements will remove the first and last elements from new_blocks_list, leaving only the statements executed within the else block.
                         new_blocks_list.shift(); 
                         new_blocks_list.pop();
-                        /*
-                        An object called else_instruction is created.
-                        else_instruction's func attribute is set to "else".
-                        If new_blocks_list has more than one element, else_instruction's blocks_list is set to a String with each element separated by newline.
-                        Otherwise, else_instruction's block_list is set to the sole element of new_blocks_list.
-                        This could be assuming that new_blocks_list cannot be empty, which is indeed possible if the student makes a mistake.
-                        We should keep an eye on this, I am uncertain if there could be some inconsistencies.
-                        */
+                        //An instruction is built based on the information retrieved.
                         let else_instruction = buildElseInstruction(new_blocks_list.length > 1 ? new_blocks_list.join("\n") : new_blocks_list[0])
 
                         //Add else_instruction to else_container
@@ -858,15 +677,6 @@ export default function decode(registers, blocks_list, instructions, output) {  
                         instruction["else-if"] = else_container
                         break;
                     }
-
-                    /*
-                    If the kw_vals placeHolderth element is not an object or the placeHolder index is out of bounds, terminate this loop.
-                    I am certainly uncertain why this is done.
-                    See notes above this loop as to why.
-                    It does not seem to be needed right now, but I'm leaving it commented out just in case.
-                    */
-
-                    //if (typeof(kw_vals[placeHolder]) != "object" || placeHolder > kw_vals.length) break;
                     
                 }
 
@@ -884,12 +694,11 @@ export default function decode(registers, blocks_list, instructions, output) {  
 
                 //The variable print_container is set to be the content in between the parentheses, or what is to be printed.    
                 var print_container = line[1].split("(")[1].split(")")[0]
-                /*
-                instruction's func is set to "print".
-                Its value is set to be print_container.
-                */
+                //An instruction is then built with this information.
                 instruction = buildPrintInstruction(print_container)
                 break;
+
+            //In the event that a closing bracket is found, one that has not been absorbed into an if statement or for loop, throw an error and halt processing.
 
             case "}":
                 closingBracketMessage(output)
@@ -897,7 +706,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
 
             /*
             The following is executed if no previous cases occurred.
-            May want to do more than just display a message to the console in this case.
+            This is assumed to be indicative of a variable name being used that has not been initialized, so an error is thrown and processing is halted.
             */
             default:
                 console.log("Couldn't read a keyword")
@@ -910,6 +719,8 @@ export default function decode(registers, blocks_list, instructions, output) {  
         //The instruction created from the previous case is executed.
         let res = execute(instruction, registers, output)
 
+        //If execute returns 'quit' then that means that it threw an error, so processing should halt.
+
         if (res === 'quit') {
             return;
         }
@@ -917,26 +728,37 @@ export default function decode(registers, blocks_list, instructions, output) {  
 }
 
 /*
-This method returns an object that contains the line where a block of code starts, the line where a block of code ends, as well as the block length, which is the number of lines in a block excluding the line with the closing curly bracket.
-This method is almost identical to procedures done before to determine these values for a for block and an if block.
-This method should be used in those cases instead of the same code being written more than once.
-keyword would just be passed in as "if" or "for".
-In fact, this method is more correct than what was written earlier, as it actually iterates through every word of the current line of kw_vals.
-May need to add some error checking either inside of it or outside of it, in the event that block delimiters are never found.
+This method returns an object that contains the line where a block of code starts, the line where a block of code ends, and the block length, which is the number of lines in a block excluding the line with the closing curly bracket.
+kw_vals is the list of code statements that this method will scan through to determine block scope.
+keyword will be the term that this method looks for when finding the start of the block.
 */
 function get_stack_scope(kw_vals, keyword) {
+    /*
+    block_start and block_end are started at zero and will be used to hold information that needs to be returned.
+    scope_stack will be used to keep track of block scope.
+    */
     let block_start = 0
     let block_end = 0
     var scope_stack = [];
+
+    //The following loop iterates over every index applicable to kw_vals
+
     for (let j in kw_vals) {
+
+        //If the current line has the keyword and the scope_stack is empty, push an opening curly bracket to said scope_stack, record the block_start, and move on to the next index.
 
         if (kw_vals[j].includes(keyword) && scope_stack.length == 0) {
             scope_stack.push("{")
             block_start = parseInt(j)
             continue
         }
+
+        //Otherwise, if the code block has been entered, which is indicated by scope_stack not being empty, do the following.
+
         else if(scope_stack.length > 0) {
+            //The following loop iterates over every index applicable to the current line
             for (let k in kw_vals[j]) {
+                //If the word is a closing curly bracket, remove an element from scope_stack, and if it is now empty, record the block_end and terminate execution of this loop.
                 if (kw_vals[j][k] == "}") {    // } need their own line
                     //Like the above comment says, with this implementation, closing curly brackets must be on their own line, which is probably good for readability anyway.
                     scope_stack.pop()
@@ -945,20 +767,30 @@ function get_stack_scope(kw_vals, keyword) {
                         break;
                     }
                 }
+                //Otherwise, if an opening curly bracket is found, add one to the scope_stack
                 else if (kw_vals[j][k]=="{"){
                     scope_stack.push("{")
                 }
             }
         }
+
+        //If block_end is greater than zero, meaning that the end has been found, terminate execution of this loop.
+
         if (block_end > 0) {
             break
         }
     }
 
+
+    //If scope_stack is not empty, or if block_end was never found, return null to indicate a missing bracket. 
+
+
     if (scope_stack.length > 0 || block_end < 1) {
         console.log("ERROR -> decode -> for -> scope stack")
         return null
     }
+
+    //Otherwise return an object that contains the block_start, block_end, and block length, which is block_end - block_start
 
     return {
         start: block_start,
@@ -967,10 +799,17 @@ function get_stack_scope(kw_vals, keyword) {
     }
 }
 
+//This function returns word without the semicolon at its end if it had one, and just returns word otherwise.
+
 function clipSemicolon(word) {
     word = word.includes(';') ? word.slice(0,-1) : word
     return word
 }
+
+/*
+This function builds a Load Word instruction.
+A Load Word instruction is marked as "lw", whereas var1 is the name of the variable, value is the value to be saved to it, and type is the type of the variable.
+*/
 
 export function buildLWInstruction(var1, value, type) {
     let instruction = {
@@ -982,6 +821,13 @@ export function buildLWInstruction(var1, value, type) {
     return instruction;
 }
 
+/*
+This function builds a Math instruction.
+Its function, be that add, sub, mult, or div, is specified when it is called.
+reg_val is the name of the variable that the result should be saved too.
+var1 and var2 are the two operands.
+*/
+
 function buildMathInstruction(func, reg_val, var1, var2) {
     let instruction = {
         func: func,
@@ -992,6 +838,11 @@ function buildMathInstruction(func, reg_val, var1, var2) {
     return instruction;
 }
 
+/*
+This function builds a For instruction.
+blocks_list is the list of code blocks in the for loop whereas conditions is the conditions of the for loop's execution.
+*/
+
 function buildForInstruction(blocks_list, conditions) {
     let instruction = {
         func: "for",
@@ -1000,6 +851,8 @@ function buildForInstruction(blocks_list, conditions) {
     };
     return instruction;
 }
+
+//This is highly similar to buildForInstruction, but is for an If instruction instead.
 
 function buildIfInstruction(blocks_list, conditions) {
     let instruction = {
@@ -1010,6 +863,8 @@ function buildIfInstruction(blocks_list, conditions) {
     return instruction;
 }
 
+//This is similar to what is above, but does not need conditions, since it builds an else instruction, as if instructions are used for if or else-if statements.
+
 function buildElseInstruction(blocks_list) {
     let instruction = {
         func: "else",
@@ -1018,6 +873,8 @@ function buildElseInstruction(blocks_list) {
     return instruction;
 }
 
+//This function builds a print instruction and takes in the information that is to be printed.
+
 function buildPrintInstruction(print_container) {
     let instruction = {
         func: "print",
@@ -1025,6 +882,12 @@ function buildPrintInstruction(print_container) {
     };
     return instruction;
 }
+
+/*
+The following several methods are all very similar, so I will comment on them all here.
+They all take in the intepreter's output object, as they need to remove all content from it and push an Error object.
+Some take in more parameters in order to customize the error message for the situation at hand.
+*/
 
 export function uninitializedVariableMessage(keyword, output) {
     output.splice(0, output.length)
@@ -1096,6 +959,14 @@ export function invalidOperationMessage(variable, output) {
     output.push(new Error(variable + " is not numeric, so it cannot be operated on as specified.", 'invalid operation'))
 }
 
+/*
+This function will return value if it is a simple value, or the value of the variable named value if there is one.
+If value is numeric, is a valid boolean, or is a valid string, then it is a simple value and is returned.
+Otherwise, if registers has a register named value, then that register's value is returned.
+Otherwise return null to signify that this method has processed a variable that has not been initialized.
+If a variable has been declared but not initialized then its value will be null, so that case is handled by the else-if statement while the case of a variable never being declared at all is handled by the else statement.
+*/
+
 export function substituteVariable(registers, value) {
     console.log(value)
     if (isNumeric(value) || validateBoolean(value) || validateString(value)) {
@@ -1109,19 +980,46 @@ export function substituteVariable(registers, value) {
     }
 }
 
+/*
+This function takes an array that represents an expression and collapses elements that together are a string into each other.
+This is necessary because elements are seen as delimited by spaces, but "Hello world!" should only be one element, a String, despite containing a space.
+"Hello and world!" would be two different elements at first, and this method fixes that.
+*/
+
 export function collapseStrings(expression) {
+    /*
+    string will contain the string that is currently being built from expression elements.
+    building will specify if a string is currently being built or not.
+    ret will be the array that is returned when this function concludes.
+    */
     let string = null
     let building = false
     let ret = []
+    //This loop iterates over all of the indices that can be used to access the elements of expression.
     for (let i = 0; i < expression.length; i++) {
+        /*
+        If the current element contains " , and the element is either one character long or it does not contain any more occurences of " , and a string is not currently being built, do the following.
+        Set building to true, since a new string will be built.
+        set string to equal the current element.
+        */
         if (expression[i].includes('"') && (expression[i].length == 1 || !expression[i].substring(1).includes('"')) && !building) {
             building = true
             string = expression[i]
         }
+        /*
+        Otherwise, if a string is being built and the current element does not contain " , then this element is understood to be a part of the current string.
+        Append a space to string followed by the current element.
+        An example where this would occur would be "One two three", when two is found and string is currently "One , so the following should be done.
+        */
         else if (building && !expression[i].includes('"')) {
             string += " "
             string += expression[i]
         }
+        /*
+        Otherwise, if a string is being built and the current element does containt " , do the following.
+        Add the element to string in the same manner as before, but after that string will be complete, since the closing " has been found.
+        Push string to ret before clearing the string variable and setting building to false, since the building process is now complete.
+        */
         else if (building && expression[i].includes('"')) {
             string += " "
             string += expression[i]
@@ -1129,15 +1027,21 @@ export function collapseStrings(expression) {
             string = null
             building = false
         }
+        //Otherwise the current element is not part of a string that needs to be collapsed, so just push it to ret.
         else {
             ret.push(expression[i])
         }
     }
 
+    //If ret is a single element long, just return that element.
+
     if (ret.length == 1) {
         console.log(ret)
         return ret[0]
     }
+
+    //Otherwise, return ret as the array it is.
+
     else {
         return ret  
     }

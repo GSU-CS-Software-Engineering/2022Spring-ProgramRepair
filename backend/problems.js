@@ -25,6 +25,7 @@ class Problems {
         */
         this.problemList =
         [
+            /*
            { name: 'Say Hello', prompt: 'Please print "Hello World" to the console.', code: ['System.out.println("Hello World");'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hello World' },
            { name: 'Count to Three', prompt: 'Please print the numbers 1-3 line-by-line using a for loop.', code: ['for (int i = 1; i <= 3; i++) {', 'System.out.println(i);', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }, { block: this.blocks[1], quantity: 1 }, { block: this.blocks[2], quantity: 1 }], answer: '1,2,3'},
            { name: 'Say Goodbye', prompt: 'Please print "Goodbye World" to the console.', code: ['System.out.println("Goodbye World");'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Goodbye World' },
@@ -53,6 +54,33 @@ class Problems {
            { name: 'Testing String Expressions 1', prompt: 'Testing simple String expressions.', code: ['String s = "H"', 'System.out.println(s += "ello" + " World");', 'System.out.println(s);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hello World,Hello' },
            { name: 'Testing String Expressions 2', prompt: 'Testing simple String expressions with an error.', code: ['String s = "H"', 'System.out.println(s += "ello + " World");', 'System.out.println(s);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hello World,Hello' },
            { name: 'Testing String Expressions 3', prompt: 'Testing complex String expressions.', code: ['String s = "H"', 's += !true', 's += 9','System.out.println(s);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hfalse9' }
+            */
+
+           { name: 'Initialize Integer', prompt: 'Displays an integer saved to a variable to ensure correct functioning.', code: ['int x = 4;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '4' },
+           { name: 'Initialize Double', prompt: 'Displays a double saved to a variable to ensure correct functioning.', code: ['double pi = 3.14;', 'System.out.println(pi);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '3.14' },
+           { name: 'Initialize Boolean', prompt: 'Displays a boolean saved to a variable to ensure correct functioning.', code: ['boolean x = true;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'true' },
+           { name: 'Initialize String', prompt: 'Displays a string saved to a variable to ensure correct functioning.', code: ['String x = "Hello world!";', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hello world!' },
+           { name: 'Alter Integer', prompt: 'Tests the successful alteration of an integer.', code: ['int x = 4;', 'x = 9;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '9' },
+           { name: 'Alter Double', prompt: 'Tests the successful alteration of a double.', code: ['double x = 6.4;', 'x = 3.7;','System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '3.7' },
+           { name: 'Alter Boolean', prompt: 'Tests the successful alteration of a boolean.', code: ['boolean x = true;', 'x = false;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'false' },
+           { name: 'Alter String', prompt: 'Tests the successful alteration of a string.', code: ['String x = "Hello world!";', 'x = "Goodbye world!";', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Goodbye world!' },
+           { name: 'Declare then Initialize Integer', prompt: 'Declares an integer and then initializes it, then prints the value to ensure proper functioning.', code: ['int x;', 'x = -4;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '-4' },
+           { name: 'Declare then Initialize Double', prompt: 'Declares a double and then initializes it, then prints the value to ensure proper functioning.', code: ['double x;', 'x = 0.00;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '0.00' },
+           { name: 'Declare then Initialize Boolean', prompt: 'Declares a boolean and then initializes it, then prints the value to ensure proper functioning.', code: ['boolean x;', 'x = true;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'true' },
+           { name: 'Declare then Initialize String', prompt: 'Declares a string and then initializes it, then prints the value to ensure proper functioning.', code: ['String x;', 'x = "Hello world!";', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hello world!' },
+           { name: 'Test Uninitialized Variable', prompt: 'Attempts to use a variable that has not been initialized.', code: ['int y = -4;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '-4' },
+           { name: 'Test Duplicate Variable', prompt: 'Attempts to intitialize the same variable twice.', code: ['double x;', 'x = 0.00;', 'double x = 4.1;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '4.1' },
+           { name: 'Test Out of Scope Variable', prompt: 'Attempts to print a variable that is not within the scope of the print statement.', code: ['int x = 4;', 'if (x > 2) {', 'int y = 3;', '}', 'System.out.println(y);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '3' },
+           { name: 'Test Type Mismatch', prompt: 'Attempts to save a double as an integer.', code: ['int x = 4.14;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '4.14' },
+           { name: 'Test Altered Constant', prompt: 'Attempts to alter the value of a constant.', code: ['final int x = 4;', 'x = -4;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '-4' },
+           { name: 'Test Divide By Zero', prompt: 'Attempts to divide by zero.', code: ['double x = 4 / 0;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '0' },
+           { name: 'Evaluate Math Expression', prompt: 'Tests the evaluation of a math expression.', code: ['int x = 45 / 5 + 10;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '19' },
+           { name: 'Evaluate Boolean Expression', prompt: 'Tests the evaluation of a boolean expression.', code: ['boolean x = 4 > 2 && 6 < 5;', 'System.out.println(x);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'false' },
+           { name: 'Evaluate String Expression', prompt: 'Tests the evaluation of a string expression.', code: ['String s = "H";', 'System.out.println(s += "ello" + " World!");', 'System.out.println(s);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Hello World!,Hello World!' },
+           { name: 'Nested If Statements', prompt: 'Tests the handling of nested if statements.', code: ['int i = 5;', 'if (i <= 5) {', 'if (i == 5) {', 'System.out.println("Equals five!");', '}', 'else {', 'System.out.println("Less than five!");', '}', '}', 'else {', 'System.out.println("Greater than five!);', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'Equals five!' },
+           { name: 'Nested For Loops', prompt: 'Tests the handling of nested for loops.', code: ['for (int i = 1; i <= 3; i++) {', 'for (int j = 3; j > 0; j--) {', 'System.out.println(i);', 'System.out.println(j);', '}', '}'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: '1,3,1,2,1,1,2,3,2,2,2,1,3,3,3,2,3,1' },
+           { name: 'Evaluate String Expression 2', prompt: 'Tests the evaluation of a string expression.', code: ['String x = "x";', 'String y = "y";', 'String z = "z";', 'System.out.println(x += y += z);', 'System.out.println(x);', 'System.out.println(y);', 'System.out.println(z);'], blocks: [{ block: this.blocks[0], quantity: 1 }], answer: 'xyz,xyz,yz,z' },
+           
 
         ];
     }

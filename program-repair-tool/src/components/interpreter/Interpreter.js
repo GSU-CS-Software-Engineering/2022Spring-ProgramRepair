@@ -1,33 +1,23 @@
 /*
-
-*/
-/*
-This is the interpreter file.
-As such, it is the most vital file in the codebase, since it is what determines Java code output.
-Therefore, it is needs to be understood functionally and conceptually more than any other file.
-It imports all the functions from mips_instructions.js to use for itself.
+This is the main file for the interpreter, which contains the definition for the Interpreter class.
+The decode and execute methods are stored in different files for organization, so they have to be imported to be used here.
 */
 import decode from './decoder.js'
-import { execute } from './executor'
+import { execute } from './executor.js'
 
 class Interpreter {
                 
     constructor(blocks_list, registers) {
         /*
-        An interpreter object's registers will be set to the registers parameter if it is not undefined.
+        An interpreter's registers will be set to the registers parameter if it is not undefined.
         If the registers parameter is undefined, then the interpreter object's registers will be set to an empty object.
         The properties kept in registers will be the variables that the interpreter will keep track of.
         */
-        this.registers = typeof(registers) != "undefined" ? registers : {}  // Variables that are stored and/or manipulated
-        // List of code instruction blocks. Separated by line number
-        // Keeps track of code to run for different scopes throughout
-        // the user's program
+        this.registers = typeof(registers) != "undefined" ? registers : {}
         /*
         If the blocks_list parameter is an object then the object's blocks_list attribute will be set to the parameter's inner HTML, or the content within the HTML tags.
         See more at: https://www.w3schools.com/jsref/prop_html_innerhtml.asp
         If the blocks_list parameter is not an object then the object's block_list attribute is simply set to the parameter.
-        Uncertain of the intention behind this distinction.
-        In any case, blocks_list seems like it will be an array of the code blocks found within the problem.
         */
         this.blocks_list = typeof(blocks_list) == 'object' ? blocks_list.innerHTML : blocks_list 
         //This object's instructions attribute will be initialized as an empty array.
@@ -42,12 +32,11 @@ class Interpreter {
         /*
         The fetch and decode methods are called if this object's blocks_list is not undefined.
         If this object's blocks_list is undefined, then a message is output to the console.
-        This is likely the intention that answers the uncertainty on line 29.
+        While this is a case worth checking for, it should not occur if the Interpreter is used properly within the code.
         */
         if (typeof this.blocks_list !== 'undefined') {
             this.fetch()
             decode(this.registers, this.blocks_list, this.instructions, this.output)
-            // execute is called automatically from decode
         }
         else {
             console.log("Undefined blocks_list")
@@ -75,9 +64,17 @@ class Interpreter {
         return this.output;
     }
 
+
+    /*
+    The Interpreter class's execute method is distinct from the execute method that is stored in executor.js
+    It is implemented so that the execute method from executor.js can be called on by a particular interpreter, as it will supply its own registers and output to the method.
+    This is done within executor.js's execute method itself.
+    */
     execute(instruction) {
         execute(instruction, this.registers, this.output)
     }
 }
+
+//The following line exposes the Interpreter class to other files so that they can import it, and because it is the default export it does not have to be specifically selected by the import statement, only given a name.
 
 export default Interpreter;
