@@ -246,18 +246,20 @@ export default {
         //This function (attemps to) clears the workspace 
         clearWorkspace() {
             // If the inventory size is 0, copy all the data from the workspace.
-            if (window.confirm("Are you sure you want to clear workspace?")){ //To make sure the user doesn't accidentally clear their work
-                if (this.$props.problem.code.length == 0) {
-                    console.log("Inventory is empty, shuffling new one.");
-                    this.$props.problem.code = this.$data.items;
-                    this.$data.items = [];
-                // Otherwise, move the remaining blocks back to the inventory.
-                } else {
-                    console.log("Moving all codeblocks back to the inventory.");
-                    this.$props.problem.code = this.shuffle(this.$props.problem.code.concat(this.$data.items));
+            if (this.$data.items.length > 0) {
+                if (window.confirm("Are you sure you want to clear workspace?")){ //To make sure the user doesn't accidentally clear their work
+                    if (this.$props.problem.code.length == 0) {
+                        console.log("Inventory is empty, shuffling new one.");
+                        this.$props.problem.code = this.$data.items;
+                        this.$data.items = [];
+                    // Otherwise, move the remaining blocks back to the inventory.
+                    } else {
+                        console.log("Moving all codeblocks back to the inventory.");
+                        this.$props.problem.code = this.shuffle(this.$props.problem.code.concat(this.$data.items));
+                    }
                 }
+                this.reload();
             }
-            this.reload();
         } 
     },
 };
