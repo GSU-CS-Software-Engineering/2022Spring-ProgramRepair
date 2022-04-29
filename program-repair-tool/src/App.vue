@@ -17,6 +17,7 @@ Below is this component's template.
 import Footer from './components/Footer.vue'
 import Header from './components/Header.vue'
 
+
 export default {
   /*
   Still uncertain why this component has a name and others do not.

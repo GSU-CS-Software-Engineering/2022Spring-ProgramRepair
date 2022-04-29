@@ -64,10 +64,10 @@ export default function decode(registers, blocks_list, instructions, output) {  
         */
         let new_blocks_list;
         let conditions;
-        let block_start;
-        let block_end;
-        var scope_stack;
-        let block_len;
+        // let block_start;
+        // let block_end;
+        // var scope_stack;
+        // let block_len;
 
         /*
         This switch statement is nearly the rest of the entire function and is quite large.
@@ -163,7 +163,7 @@ export default function decode(registers, blocks_list, instructions, output) {  
 
             case "variable": // (c = a + b +....(+-*/))
                 //This variable, indexOfOperator, is set to 0 at first, and will be used later.
-                var indexOfOperator = 0
+                // var indexOfOperator = 0
                 /*
                 If the line has more then three words then it is understood to involve an expression.
                 Like before, an expression variable is set to be only the expression itself, with all semicolons removed.
