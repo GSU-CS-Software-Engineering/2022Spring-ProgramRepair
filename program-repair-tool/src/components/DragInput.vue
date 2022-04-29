@@ -21,7 +21,6 @@ Below is the template for this component.
             For more information on v-slot check: https://vuejs.org/guide/components/slots.html
             There is a div with a draggable-item class, which is defined in the style below, and within the div the item is displayed.
             In effect this creates the blocks for each element inside the code array.
-           unexpected mutatation of problem prop line 33
             -->
             <draggable v-model="items" transition="100" class="drop-zone">
                 <template v-slot:item="{ item }">
@@ -52,11 +51,6 @@ Below is the template for this component.
 <script>
 import Draggable from 'vue3-draggable'
 import { createToaster } from "@meforma/vue-toaster";
-
-/*
-Unsure why an asterisk was needed to import from Interpreter.js, importing semantics can be looked up if needed.
-n: it seems that the asterisk imports everything from the file instead of designated portions. This is a wildcard import. Not recommended generally but still used.https://rules.sonarsource.com/javascript/RSPEC-2208
-*/
 import Interpreter from "./interpreter/Interpreter.js"
 
 export default {
