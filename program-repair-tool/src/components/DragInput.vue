@@ -164,7 +164,7 @@ export default {
                             toaster.show("Try using all the available blocks")
                         } else {
                             toaster.show("'"+this.$data.items[i] + "' may be in the wrong position");
-                            this.highlight(i, 'lightcoral', 'lightblue', 3);
+                            this.highlight(i+1, 'lightcoral', 'lightblue', 3);
                         }
                         
                         break;
