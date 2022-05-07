@@ -243,7 +243,6 @@ export default {
         reload() {
             this.$parent.reload();
         },
-        //This function (attemps to) clears the workspace 
         //This function (attempts to) clear the workspace 
         clearWorkspace() {
             // If the inventory size is 0, copy all the data from the workspace.
